@@ -11,7 +11,7 @@ wit_bindgen::generate!({
 struct MyGuest;
 
 impl Guest for MyGuest {
-    fn increment(buffer: Memory, where_: u32) {
+    fn increment(buffer: &Memory, where_: u32) {
         let data = buffer.attach(Options::WRITE);
         assert!(where_ < data.size);
         let addr = data.addr as *mut u8;

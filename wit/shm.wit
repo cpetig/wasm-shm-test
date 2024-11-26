@@ -18,7 +18,7 @@ interface exchange {
 
 interface image {
     use exchange.{memory};
-    increment: func(buffer: memory, where: u32);
+    increment: func(buffer: borrow<memory>, where: u32);
 }
 
 world plugin {
