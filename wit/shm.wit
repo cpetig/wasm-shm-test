@@ -1,0 +1,30 @@
+package test:shm;
+
+interface exchange {
+    record area {
+        addr: u32,
+        size: u32,
+    }
+    flags options {
+        write,
+        shared,
+    }
+    resource memory {
+        constructor(size: u32);
+        attach: func(opt: options) -> area;
+        detach: func(consumed: u32);
+    }
+}
+
+interface image {
+    use exchange.{memory};
+    increment: func(buffer: memory, where: u32);
+}
+
+world plugin {
+    export image;
+}
+
+world main {
+    import image;
+}
