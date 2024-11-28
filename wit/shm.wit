@@ -1,18 +1,54 @@
 package test:shm;
 
+// this only works as a host provided interface, it can't be composed,
+// defining it in this WIT is just because of tool compatibilty
 interface exchange {
-    record area {
+    record memory-area {
         addr: u32,
         size: u32,
     }
-    flags options {
+    flags attach-options {
+        // attach memory in write mode (exclusive operation)
         write,
+        // write: the data inside this buffer can be read multiple times without breaking ownership semantics
         shared,
+        // extension: wait for the buffer to become available (write: empty, read: filled)
+        block,
+    }
+    enum error {
+        // no storage provided for attach
+        no-storage,
+        // non-blocking and no data (read) or no room (write) left
+        busy,
+        // add-storage rejects a too small buffer
+        wrong-size,
+        // somehow the host decided that it isn't possible to mmap
+        internal,
     }
     resource memory {
+        // construct a memory buffer by size
         constructor(size: u32);
-        attach: func(opt: options) -> area;
+        
+        // all non-static member functions implicitely borrow a 
+        // memory object as the first argument
+
+        // attach memory buffer into linear memory
+        attach: func(opt: attach-options) -> result<memory-area, error>;
+        // detach buffer, consumed bytes have been written/read
         detach: func(consumed: u32);
+
+        // pre-allocate position inside linear memory:
+        // get recommended allocation size
+        minimum-size: func() -> u32;
+        // buffers need a position in linear memory to attach to, 
+        // this function provides a pre-allocated area,
+        // the area should be at least "minimum-size" big
+        add-storage: func(buffer: memory-area) -> result<_, error>;
+
+        // optional: create a buffer local to this linear memory
+        create-local: static func(buffer: memory-area) -> memory;
+
+        // the CM implicitely creates a destructor called "drop"
     }
 }
 
