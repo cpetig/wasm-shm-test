@@ -52,16 +52,48 @@ mod myshm {
     use std::ffi::c_void;
 
     use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
+    use super::MyMemory;
     use anyhow::bail;
     use wasmtime::{
-        component::{Resource, ResourceType},
+        component::{
+            Component, ComponentType, Lift, Resource, ResourceType,
+            __internal::{CanonicalAbiInfo, InstanceType, InterfaceType, LiftContext},
+        },
         Caller, Extern, StoreContextMut,
     };
     use wasmtime_wasi::WasiView;
 
-    // const PAGESIZE: u32 = 4096;
+    // Hack: We wrap this type to remember the pointer to the linear memory from the lifting
+    struct WrappedAttachOptions {
+        inner: AttachOptions,
+        linear: *mut u8,
+    }
 
-    use super::MyMemory;
+    unsafe impl ComponentType for WrappedAttachOptions {
+        type Lower = <AttachOptions as ComponentType>::Lower;
+        const ABI: CanonicalAbiInfo = <AttachOptions as ComponentType>::ABI;
+        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
+            <AttachOptions as ComponentType>::typecheck(ty, types)
+        }
+    }
+
+    unsafe impl Lift for WrappedAttachOptions {
+        fn lift(
+            cx: &mut LiftContext<'_>,
+            ty: InterfaceType,
+            src: &Self::Lower,
+        ) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            <AttachOptions as Lift>::lift(cx, ty, src)
+                .map(|a| WrappedAttachOptions { inner: a, linear })
+        }
+
+        fn load(cx: &mut LiftContext<'_>, ty: InterfaceType, bytes: &[u8]) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            <AttachOptions as Lift>::load(cx, ty, bytes)
+                .map(|a| WrappedAttachOptions { inner: a, linear })
+        }
+    }
 
     fn new<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
@@ -86,19 +118,20 @@ mod myshm {
     }
 
     fn attach<T: WasiView>(
-        mut ctx: Caller<'_, T>,
-        (objid, flags): (Resource<MyMemory>, AttachOptions),
+        mut ctx: StoreContextMut<'_, T>,
+        (objid, flags): (Resource<MyMemory>, WrappedAttachOptions),
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
-        let Some(Extern::Memory(memory)) = ctx.get_export("memory") else {
-            bail!("Attach without linear memory");
-        };
-        let start = unsafe { memory.data_ptr(&mut ctx).byte_add(obj.buffer_addr as usize) };
+        // todo!();
+        // let Some(Extern::Memory(memory)) = ctx.get_export("memory") else {
+        //     bail!("Attach without linear memory");
+        // };
+        let start = unsafe { flags.linear.byte_add(obj.buffer_addr as usize) };
         // let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
         // let offset = start.align_offset(pagesize);
         // let start = unsafe {start.add(offset)};
-        let prot = if flags.contains(AttachOptions::WRITE) {
+        let prot = if flags.inner.contains(AttachOptions::WRITE) {
             libc::PROT_READ | libc::PROT_WRITE
         } else {
             libc::PROT_READ
