@@ -15,6 +15,7 @@ wasmtime::component::bindgen!({
     }
 });
 
+#[derive(Clone)]
 pub struct MyMemory {
     size: u32,
     file: i32,
@@ -48,14 +49,17 @@ impl WasiView for HostState {
 }
 
 mod myshm {
+    use std::ffi::c_void;
+
     use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
+    use anyhow::bail;
     use wasmtime::{
-        component::{Resource, ResourceType, Val},
-        StoreContextMut,
+        component::{Resource, ResourceType},
+        Caller, Extern, StoreContextMut,
     };
     use wasmtime_wasi::WasiView;
 
-    const PAGESIZE: u32 = 4096;
+    // const PAGESIZE: u32 = 4096;
 
     use super::MyMemory;
 
@@ -77,18 +81,52 @@ mod myshm {
         })?,))
     }
 
-    fn dtor<T>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
+    fn dtor<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
         todo!()
     }
 
-    fn attach<T>(
-        _ctx: StoreContextMut<'_, T>,
+    fn attach<T: WasiView>(
+        mut ctx: Caller<'_, T>,
         (objid, flags): (Resource<MyMemory>, AttachOptions),
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
-        todo!()
+        let view = ctx.data_mut();
+        let obj = view.table().get(&objid).unwrap().clone();
+        let Some(Extern::Memory(memory)) = ctx.get_export("memory") else {
+            bail!("Attach without linear memory");
+        };
+        let start = unsafe { memory.data_ptr(&mut ctx).byte_add(obj.buffer_addr as usize) };
+        // let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
+        // let offset = start.align_offset(pagesize);
+        // let start = unsafe {start.add(offset)};
+        let prot = if flags.contains(AttachOptions::WRITE) {
+            libc::PROT_READ | libc::PROT_WRITE
+        } else {
+            libc::PROT_READ
+        };
+        let addr = unsafe {
+            libc::mmap(
+                start.cast(),
+                obj.size as usize,
+                prot,
+                libc::MAP_SHARED,
+                obj.file,
+                0,
+            )
+        };
+        if addr >= start.cast()
+            && unsafe { addr.byte_add(obj.size as usize) }
+                <= unsafe { start.byte_add(obj.buffer_size as usize) }.cast()
+        {
+            Ok((Ok(MemoryArea {
+                addr: unsafe { addr.byte_offset_from(start.cast::<c_void>()) } as u32,
+                size: obj.size,
+            }),))
+        } else {
+            Ok((Err(Error::Internal),))
+        }
     }
 
-    fn detach<T>(
+    fn detach<T: WasiView>(
         _ctx: StoreContextMut<'_, T>,
         (objid, consumed): (Resource<MyMemory>, u32),
     ) -> wasmtime::Result<()> {
@@ -101,7 +139,8 @@ mod myshm {
     ) -> wasmtime::Result<(u32,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap();
-        Ok((obj.size + 2 * PAGESIZE,))
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        Ok((obj.size + 2 * pagesize,))
     }
 
     fn add_storage<T: WasiView>(
@@ -110,7 +149,8 @@ mod myshm {
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get_mut(&objid).unwrap();
-        if area.size < obj.size + 2 * PAGESIZE {
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        if area.size < obj.size + 2 * pagesize {
             return Ok((Err(Error::WrongSize),));
         }
         obj.buffer_addr = area.addr;
@@ -118,7 +158,7 @@ mod myshm {
         Ok((Ok(()),))
     }
 
-    fn create_local<T>(
+    fn create_local<T: WasiView>(
         _ctx: StoreContextMut<'_, T>,
         (_area,): (MemoryArea,),
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
@@ -132,6 +172,7 @@ mod myshm {
         let mut shm = root.instance("test:shm/exchange")?;
         shm.resource("memory", ResourceType::host::<MyMemory>(), dtor)?;
         shm.func_wrap("[constructor]memory", new::<T>)?;
+        // shm.insert("[method]memory.attach", Definition::Func(HostFunc::new(attach::<T>)))?;
         shm.func_wrap("[method]memory.attach", attach::<T>)?;
         shm.func_wrap("[method]memory.detach", detach::<T>)?;
         shm.func_wrap("[method]memory.minimum-size", minimum_size::<T>)?;
