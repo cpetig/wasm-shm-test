@@ -10,6 +10,7 @@ use wasmtime_wasi::{
 wasmtime::component::bindgen!({
     path: "../wit/shm.wit",
     world: "main",
+    include_generated_code_from_file: true,
     with: {
         "test:shm/exchange/memory": MyMemory,
     }
@@ -82,6 +83,20 @@ impl WasiView for HostState {
     }
 }
 
+mod myshm {
+    use wasmtime::StoreContextMut;
+
+    fn new<T>(ctx: StoreContextMut<'_, T>, p: ()) -> Result<(), wasmtime::Error> {
+        todo!()
+    }
+
+    pub(crate) fn add_to_linker<T: 'static>(l: &mut wasmtime::component::Linker<T>) {
+        let mut root = l.root();
+        let mut shm = root.instance("test:shm/exchange").unwrap();
+        shm.func_wrap("new", new::<T>);
+    }
+}
+
 impl test::shm::exchange::Host for HostState {}
 
 fn main() -> anyhow::Result<()> {
@@ -95,7 +110,8 @@ fn main() -> anyhow::Result<()> {
     let component = Component::from_file(&engine, wasm_module_path)?;
 
     let mut linker = Linker::new(&engine);
-    test::shm::exchange::add_to_linker(&mut linker, |s| s)?;
+    myshm::add_to_linker(&mut linker);
+    //test::shm::exchange::add_to_linker(&mut linker, |s| s)?;
     wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
     let command = Command::instantiate(&mut store, &component, &linker)?;
