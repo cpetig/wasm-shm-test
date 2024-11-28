@@ -18,45 +18,45 @@ wasmtime::component::bindgen!({
 
 pub struct MyMemory(i32);
 
-impl test::shm::exchange::HostMemory for HostState {
-    fn new(&mut self, size: u32) -> Resource<MyMemory> {
-        let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
-        let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
-        let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
-        unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
-        unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
-        self.table.push(MyMemory(file)).unwrap()
-    }
+// impl test::shm::exchange::HostMemory for HostState {
+//     fn new(&mut self, size: u32) -> Resource<MyMemory> {
+//         let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
+//         let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
+//         let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
+//         unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
+//         unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
+//         self.table.push(MyMemory(file)).unwrap()
+//     }
 
-    fn attach(
-        &mut self,
-        _self_: Resource<MyMemory>,
-        _opt: AttachOptions,
-    ) -> Result<MemoryArea, Error> {
-        // I think I will need to drill a hole into the component abstraction macros
-        // to get a pointer to allocated memory
-        //self.ctx().
-        todo!()
-    }
+//     fn attach(
+//         &mut self,
+//         _self_: Resource<MyMemory>,
+//         _opt: AttachOptions,
+//     ) -> Result<MemoryArea, Error> {
+//         // I think I will need to drill a hole into the component abstraction macros
+//         // to get a pointer to allocated memory
+//         //self.ctx().
+//         todo!()
+//     }
 
-    fn detach(&mut self, _self_: Resource<MyMemory>, _consumed: u32) {
-        todo!()
-    }
+//     fn detach(&mut self, _self_: Resource<MyMemory>, _consumed: u32) {
+//         todo!()
+//     }
 
-    fn drop(&mut self, _rep: Resource<MyMemory>) -> wasmtime::Result<()> {
-        todo!()
-    }
+//     fn drop(&mut self, _rep: Resource<MyMemory>) -> wasmtime::Result<()> {
+//         todo!()
+//     }
 
-    fn minimum_size(&mut self, _self_: Resource<MyMemory>) -> u32 {
-        todo!()
-    }
-    fn add_storage(&mut self, _self_: Resource<MyMemory>, buffer: MemoryArea) -> Result<(), Error> {
-        todo!()
-    }
-    fn create_local(&mut self, buffer: MemoryArea) -> Resource<MyMemory> {
-        todo!()
-    }
-}
+//     fn minimum_size(&mut self, _self_: Resource<MyMemory>) -> u32 {
+//         todo!()
+//     }
+//     fn add_storage(&mut self, _self_: Resource<MyMemory>, buffer: MemoryArea) -> Result<(), Error> {
+//         todo!()
+//     }
+//     fn create_local(&mut self, buffer: MemoryArea) -> Resource<MyMemory> {
+//         todo!()
+//     }
+// }
 
 struct HostState {
     ctx: WasiCtx,
@@ -84,20 +84,84 @@ impl WasiView for HostState {
 }
 
 mod myshm {
-    use wasmtime::StoreContextMut;
+    use wasmtime::{
+        component::{ResourceType, Val},
+        StoreContextMut,
+    };
+    use wasmtime_wasi::WasiView;
 
-    fn new<T>(ctx: StoreContextMut<'_, T>, p: ()) -> Result<(), wasmtime::Error> {
+    fn new<T: WasiView>(
+        mut ctx: StoreContextMut<'_, T>,
+        p: &[Val],
+        r: &mut [Val],
+    ) -> wasmtime::Result<()> {
+        assert!(p.len() == 1);
+        assert!(r.len() == 1);
+        let Val::U32(size) = p[0] else {
+            panic!("expected int")
+        };
+        let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
+        let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
+        let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
+        unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
+        unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
+        let view = ctx.data_mut();
+        let obj = view.table().push(super::MyMemory(file)).unwrap();
+        r[0] = Val::Resource(obj.try_into_resource_any(ctx)?);
+        Ok(())
+    }
+
+    fn dtor<T>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
         todo!()
     }
 
-    pub(crate) fn add_to_linker<T: 'static>(l: &mut wasmtime::component::Linker<T>) {
+    fn attach<T>(_ctx: StoreContextMut<'_, T>, _p: &[Val], _r: &mut [Val]) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    fn detach<T>(_ctx: StoreContextMut<'_, T>, _p: &[Val], _r: &mut [Val]) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    fn minimum_size<T>(
+        _ctx: StoreContextMut<'_, T>,
+        _p: &[Val],
+        _r: &mut [Val],
+    ) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    fn add_storage<T>(
+        _ctx: StoreContextMut<'_, T>,
+        _p: &[Val],
+        _r: &mut [Val],
+    ) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    fn create_local<T>(
+        _ctx: StoreContextMut<'_, T>,
+        _p: &[Val],
+        _r: &mut [Val],
+    ) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    pub(crate) fn add_to_linker<T: WasiView + 'static>(
+        l: &mut wasmtime::component::Linker<T>,
+    ) -> wasmtime::Result<()> {
         let mut root = l.root();
-        let mut shm = root.instance("test:shm/exchange").unwrap();
-        shm.func_wrap("new", new::<T>);
+        let mut shm = root.instance("test:shm/exchange")?;
+        shm.resource("memory", ResourceType::host::<super::MyMemory>(), dtor)?;
+        shm.func_new("[constructor]memory", new::<T>)?;
+        shm.func_new("[method]memory.attach", attach::<T>)?;
+        shm.func_new("[method]memory.detach", detach::<T>)?;
+        shm.func_new("[method]memory.minimum-size", minimum_size::<T>)?;
+        shm.func_new("[method]memory.add-storage", add_storage::<T>)?;
+        shm.func_new("[static]memory.create-local", create_local::<T>)?;
+        Ok(())
     }
 }
-
-impl test::shm::exchange::Host for HostState {}
 
 fn main() -> anyhow::Result<()> {
     let mut config = Config::new();
@@ -110,8 +174,7 @@ fn main() -> anyhow::Result<()> {
     let component = Component::from_file(&engine, wasm_module_path)?;
 
     let mut linker = Linker::new(&engine);
-    myshm::add_to_linker(&mut linker);
-    //test::shm::exchange::add_to_linker(&mut linker, |s| s)?;
+    myshm::add_to_linker(&mut linker)?;
     wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
     let command = Command::instantiate(&mut store, &component, &linker)?;
