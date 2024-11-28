@@ -1,7 +1,5 @@
 use exports::test::shm::image::Guest;
-use test::shm::exchange::{Memory, Options};
-
-pub mod host_shm;
+use test::shm::exchange::{AttachOptions, Memory, MemoryArea};
 
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
@@ -12,7 +10,18 @@ struct MyGuest;
 
 impl Guest for MyGuest {
     fn increment(buffer: &Memory, where_: u32) {
-        let data = buffer.attach(Options::WRITE);
+        let layout =
+            std::alloc::Layout::from_size_align(buffer.minimum_size() as usize, 1).unwrap();
+        if layout.size() > 0 {
+            let addr = unsafe { std::alloc::alloc(layout) };
+            buffer
+                .add_storage(MemoryArea {
+                    addr: addr as usize as u32,
+                    size: layout.size() as u32,
+                })
+                .unwrap();
+        }
+        let data = buffer.attach(AttachOptions::WRITE).unwrap();
         assert!(where_ < data.size);
         let addr = data.addr as *mut u8;
         let mem = unsafe { addr.byte_add(where_ as usize) };

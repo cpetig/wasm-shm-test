@@ -1,4 +1,4 @@
-use test::shm::exchange::{Area, Options};
+use test::shm::exchange::{AttachOptions, Error, MemoryArea};
 use wasmtime::{
     component::{Component, Linker, Resource},
     Config, Engine, Store,
@@ -27,7 +27,11 @@ impl test::shm::exchange::HostMemory for HostState {
         self.table.push(MyMemory(file)).unwrap()
     }
 
-    fn attach(&mut self, _self_: Resource<MyMemory>, _opt: Options) -> Area {
+    fn attach(
+        &mut self,
+        _self_: Resource<MyMemory>,
+        _opt: AttachOptions,
+    ) -> Result<MemoryArea, Error> {
         // I think I will need to drill a hole into the component abstraction macros
         // to get a pointer to allocated memory
         //self.ctx().
@@ -39,6 +43,16 @@ impl test::shm::exchange::HostMemory for HostState {
     }
 
     fn drop(&mut self, _rep: Resource<MyMemory>) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    fn minimum_size(&mut self, _self_: Resource<MyMemory>) -> u32 {
+        todo!()
+    }
+    fn add_storage(&mut self, _self_: Resource<MyMemory>, buffer: MemoryArea) -> Result<(), Error> {
+        todo!()
+    }
+    fn create_local(&mut self, buffer: MemoryArea) -> Resource<MyMemory> {
         todo!()
     }
 }
