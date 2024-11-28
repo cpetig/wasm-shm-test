@@ -1,6 +1,5 @@
-use test::shm::exchange::{AttachOptions, Error, MemoryArea};
 use wasmtime::{
-    component::{Component, Linker, Resource},
+    component::{Component, Linker},
     Config, Engine, Store,
 };
 use wasmtime_wasi::{
@@ -16,47 +15,12 @@ wasmtime::component::bindgen!({
     }
 });
 
-pub struct MyMemory(i32);
-
-// impl test::shm::exchange::HostMemory for HostState {
-//     fn new(&mut self, size: u32) -> Resource<MyMemory> {
-//         let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
-//         let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
-//         let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
-//         unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
-//         unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
-//         self.table.push(MyMemory(file)).unwrap()
-//     }
-
-//     fn attach(
-//         &mut self,
-//         _self_: Resource<MyMemory>,
-//         _opt: AttachOptions,
-//     ) -> Result<MemoryArea, Error> {
-//         // I think I will need to drill a hole into the component abstraction macros
-//         // to get a pointer to allocated memory
-//         //self.ctx().
-//         todo!()
-//     }
-
-//     fn detach(&mut self, _self_: Resource<MyMemory>, _consumed: u32) {
-//         todo!()
-//     }
-
-//     fn drop(&mut self, _rep: Resource<MyMemory>) -> wasmtime::Result<()> {
-//         todo!()
-//     }
-
-//     fn minimum_size(&mut self, _self_: Resource<MyMemory>) -> u32 {
-//         todo!()
-//     }
-//     fn add_storage(&mut self, _self_: Resource<MyMemory>, buffer: MemoryArea) -> Result<(), Error> {
-//         todo!()
-//     }
-//     fn create_local(&mut self, buffer: MemoryArea) -> Resource<MyMemory> {
-//         todo!()
-//     }
-// }
+pub struct MyMemory {
+    size: u32,
+    file: i32,
+    buffer_addr: u32,
+    buffer_size: u32,
+}
 
 struct HostState {
     ctx: WasiCtx,
@@ -84,66 +48,80 @@ impl WasiView for HostState {
 }
 
 mod myshm {
+    use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
     use wasmtime::{
-        component::{ResourceType, Val},
+        component::{Resource, ResourceType, Val},
         StoreContextMut,
     };
     use wasmtime_wasi::WasiView;
 
+    const PAGESIZE: u32 = 4096;
+
+    use super::MyMemory;
+
     fn new<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
-        p: &[Val],
-        r: &mut [Val],
-    ) -> wasmtime::Result<()> {
-        assert!(p.len() == 1);
-        assert!(r.len() == 1);
-        let Val::U32(size) = p[0] else {
-            panic!("expected int")
-        };
+        (size,): (u32,),
+    ) -> wasmtime::Result<(Resource<MyMemory>,)> {
         let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
         let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
         let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
         unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
         unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
         let view = ctx.data_mut();
-        let obj = view.table().push(super::MyMemory(file)).unwrap();
-        r[0] = Val::Resource(obj.try_into_resource_any(ctx)?);
-        Ok(())
+        Ok((view.table().push(MyMemory {
+            file,
+            size,
+            buffer_addr: 0,
+            buffer_size: 0,
+        })?,))
     }
 
     fn dtor<T>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
         todo!()
     }
 
-    fn attach<T>(_ctx: StoreContextMut<'_, T>, _p: &[Val], _r: &mut [Val]) -> wasmtime::Result<()> {
-        todo!()
-    }
-
-    fn detach<T>(_ctx: StoreContextMut<'_, T>, _p: &[Val], _r: &mut [Val]) -> wasmtime::Result<()> {
-        todo!()
-    }
-
-    fn minimum_size<T>(
+    fn attach<T>(
         _ctx: StoreContextMut<'_, T>,
-        _p: &[Val],
-        _r: &mut [Val],
+        (objid, flags): (Resource<MyMemory>, AttachOptions),
+    ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
+        todo!()
+    }
+
+    fn detach<T>(
+        _ctx: StoreContextMut<'_, T>,
+        (objid, consumed): (Resource<MyMemory>, u32),
     ) -> wasmtime::Result<()> {
         todo!()
     }
 
-    fn add_storage<T>(
-        _ctx: StoreContextMut<'_, T>,
-        _p: &[Val],
-        _r: &mut [Val],
-    ) -> wasmtime::Result<()> {
-        todo!()
+    fn minimum_size<T: WasiView>(
+        mut ctx: StoreContextMut<'_, T>,
+        (objid,): (Resource<MyMemory>,),
+    ) -> wasmtime::Result<(u32,)> {
+        let view = ctx.data_mut();
+        let obj = view.table().get(&objid).unwrap();
+        Ok((obj.size + 2 * PAGESIZE,))
+    }
+
+    fn add_storage<T: WasiView>(
+        mut ctx: StoreContextMut<'_, T>,
+        (objid, area): (Resource<MyMemory>, MemoryArea),
+    ) -> wasmtime::Result<(Result<(), Error>,)> {
+        let view = ctx.data_mut();
+        let obj = view.table().get_mut(&objid).unwrap();
+        if area.size < obj.size + 2 * PAGESIZE {
+            return Ok((Err(Error::WrongSize),));
+        }
+        obj.buffer_addr = area.addr;
+        obj.buffer_size = area.size;
+        Ok((Ok(()),))
     }
 
     fn create_local<T>(
         _ctx: StoreContextMut<'_, T>,
-        _p: &[Val],
-        _r: &mut [Val],
-    ) -> wasmtime::Result<()> {
+        (_area,): (MemoryArea,),
+    ) -> wasmtime::Result<(Resource<MyMemory>,)> {
         todo!()
     }
 
@@ -152,13 +130,13 @@ mod myshm {
     ) -> wasmtime::Result<()> {
         let mut root = l.root();
         let mut shm = root.instance("test:shm/exchange")?;
-        shm.resource("memory", ResourceType::host::<super::MyMemory>(), dtor)?;
-        shm.func_new("[constructor]memory", new::<T>)?;
-        shm.func_new("[method]memory.attach", attach::<T>)?;
-        shm.func_new("[method]memory.detach", detach::<T>)?;
-        shm.func_new("[method]memory.minimum-size", minimum_size::<T>)?;
-        shm.func_new("[method]memory.add-storage", add_storage::<T>)?;
-        shm.func_new("[static]memory.create-local", create_local::<T>)?;
+        shm.resource("memory", ResourceType::host::<MyMemory>(), dtor)?;
+        shm.func_wrap("[constructor]memory", new::<T>)?;
+        shm.func_wrap("[method]memory.attach", attach::<T>)?;
+        shm.func_wrap("[method]memory.detach", detach::<T>)?;
+        shm.func_wrap("[method]memory.minimum-size", minimum_size::<T>)?;
+        shm.func_wrap("[method]memory.add-storage", add_storage::<T>)?;
+        shm.func_wrap("[static]memory.create-local", create_local::<T>)?;
         Ok(())
     }
 }
