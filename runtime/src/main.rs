@@ -1,3 +1,5 @@
+use std::ffi::c_void;
+
 use wasmtime::{
     component::{Component, Linker},
     Config, Engine, Store,
@@ -21,8 +23,10 @@ pub struct MyMemory {
     file: i32,
     buffer_addr: u32,
     buffer_size: u32,
-    attached_addr: u32,
+    attached_addr: *const c_void,
 }
+
+unsafe impl Send for MyMemory {}
 
 struct HostState {
     ctx: WasiCtx,
@@ -50,7 +54,7 @@ impl WasiView for HostState {
 }
 
 mod myshm {
-    use std::ffi::c_void;
+    use std::ffi::{c_char, c_void};
 
     use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
     use super::MyMemory;
@@ -102,6 +106,7 @@ mod myshm {
         let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
         let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
         let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
+        unsafe { libc::unlink(&name as *const c_char) };
         unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
         unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
         let view = ctx.data_mut();
@@ -110,12 +115,16 @@ mod myshm {
             size,
             buffer_addr: 0,
             buffer_size: 0,
-            attached_addr: 0,
+            attached_addr: std::ptr::null(),
         })?,))
     }
 
-    fn dtor<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
-        todo!()
+    fn dtor<T: WasiView>(mut ctx: StoreContextMut<'_, T>, objid: u32) -> wasmtime::Result<()> {
+        let view = ctx.data_mut();
+        let objid = Resource::new_own(objid);
+        let obj: MyMemory = view.table().delete(objid).unwrap();
+        unsafe { libc::close(obj.file) };
+        Ok(())
     }
 
     fn attach<T: WasiView>(
@@ -130,10 +139,6 @@ mod myshm {
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
-        // todo!();
-        // let Some(Extern::Memory(memory)) = ctx.get_export("memory") else {
-        //     bail!("Attach without linear memory");
-        // };
         let start = unsafe { linear.byte_add(obj.buffer_addr as usize) };
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
         let offset = start.align_offset(pagesize);
@@ -160,9 +165,10 @@ mod myshm {
                 <= unsafe { start.byte_add(obj.buffer_size as usize) }.cast()
         {
             let obj = view.table().get_mut(&objid).unwrap();
-            obj.attached_addr = unsafe { addr.byte_offset_from(linear.cast::<c_void>()) } as u32;
+            obj.attached_addr = addr;
+            let linear_addr = unsafe { addr.byte_offset_from(linear.cast::<c_void>()) } as u32;
             Ok((Ok(MemoryArea {
-                addr: obj.attached_addr,
+                addr: linear_addr,
                 size: obj.size,
             }),))
         } else {
@@ -172,20 +178,15 @@ mod myshm {
 
     fn detach<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
-        (
-            WrappedMemory {
-                inner: objid,
-                linear,
-            },
-            consumed,
-        ): (WrappedMemory, u32),
+        (objid, consumed): (Resource<MyMemory>, u32),
     ) -> wasmtime::Result<()> {
         let view = ctx.data_mut();
-        let obj = view.table().get(&objid).unwrap().clone();
+        let obj = view.table().get_mut(&objid).unwrap();
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
         let rounded = (obj.size + pagesize - 1) & (!(pagesize - 1));
-        let base = unsafe { linear.byte_add(obj.attached_addr as usize) };
-        unsafe { libc::munmap(base.cast(), rounded as usize) };
+        let base = obj.attached_addr;
+        unsafe { libc::munmap(base.cast_mut(), rounded as usize) };
+        obj.attached_addr = std::ptr::null();
         Ok(())
     }
 
