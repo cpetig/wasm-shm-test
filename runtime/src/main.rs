@@ -128,20 +128,22 @@ mod myshm {
         //     bail!("Attach without linear memory");
         // };
         let start = unsafe { flags.linear.byte_add(obj.buffer_addr as usize) };
-        // let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
-        // let offset = start.align_offset(pagesize);
-        // let start = unsafe {start.add(offset)};
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
+        let offset = start.align_offset(pagesize);
+        let start = unsafe { start.add(offset) };
+        dbg!((flags.linear, obj.buffer_addr, start, offset, pagesize));
         let prot = if flags.inner.contains(AttachOptions::WRITE) {
             libc::PROT_READ | libc::PROT_WRITE
         } else {
             libc::PROT_READ
         };
+        let rounded = (obj.size + pagesize as u32 - 1) & (!(pagesize as u32 - 1));
         let addr = unsafe {
             libc::mmap(
                 start.cast(),
-                obj.size as usize,
+                rounded as usize,
                 prot,
-                libc::MAP_SHARED,
+                libc::MAP_SHARED | libc::MAP_FIXED,
                 obj.file,
                 0,
             )
@@ -151,7 +153,7 @@ mod myshm {
                 <= unsafe { start.byte_add(obj.buffer_size as usize) }.cast()
         {
             Ok((Ok(MemoryArea {
-                addr: unsafe { addr.byte_offset_from(start.cast::<c_void>()) } as u32,
+                addr: unsafe { addr.byte_offset_from(flags.linear.cast::<c_void>()) } as u32,
                 size: obj.size,
             }),))
         } else {
