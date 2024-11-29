@@ -53,13 +53,12 @@ mod myshm {
 
     use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
     use super::MyMemory;
-    use anyhow::bail;
     use wasmtime::{
         component::{
-            Component, ComponentType, Lift, Resource, ResourceType,
+            ComponentType, Lift, Resource, ResourceType,
             __internal::{CanonicalAbiInfo, InstanceType, InterfaceType, LiftContext},
         },
-        Caller, Extern, StoreContextMut,
+        StoreContextMut,
     };
     use wasmtime_wasi::WasiView;
 
