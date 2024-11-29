@@ -29,3 +29,7 @@ or more readable
 |drop| id: i32|-|
 
 See shm.wit for more in depth explanations of the semantics.
+
+Please note that the guest is providing storage inside its linear memory 
+but can never control the address used, e.g. due to page alignment 
+or other MMU/MPU restrictions.
