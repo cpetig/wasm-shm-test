@@ -21,6 +21,7 @@ pub struct MyMemory {
     file: i32,
     buffer_addr: u32,
     buffer_size: u32,
+    attached_addr: u32,
 }
 
 struct HostState {
@@ -63,34 +64,34 @@ mod myshm {
     use wasmtime_wasi::WasiView;
 
     // Hack: We wrap this type to remember the pointer to the linear memory from the lifting
-    struct WrappedAttachOptions {
-        inner: AttachOptions,
+    struct WrappedMemory {
+        inner: Resource<MyMemory>,
         linear: *mut u8,
     }
 
-    unsafe impl ComponentType for WrappedAttachOptions {
-        type Lower = <AttachOptions as ComponentType>::Lower;
-        const ABI: CanonicalAbiInfo = <AttachOptions as ComponentType>::ABI;
+    unsafe impl ComponentType for WrappedMemory {
+        type Lower = <Resource<MyMemory> as ComponentType>::Lower;
+        const ABI: CanonicalAbiInfo = <Resource<MyMemory> as ComponentType>::ABI;
         fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
-            <AttachOptions as ComponentType>::typecheck(ty, types)
+            <Resource<MyMemory> as ComponentType>::typecheck(ty, types)
         }
     }
 
-    unsafe impl Lift for WrappedAttachOptions {
+    unsafe impl Lift for WrappedMemory {
         fn lift(
             cx: &mut LiftContext<'_>,
             ty: InterfaceType,
             src: &Self::Lower,
         ) -> anyhow::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
-            <AttachOptions as Lift>::lift(cx, ty, src)
-                .map(|a| WrappedAttachOptions { inner: a, linear })
+            <Resource<MyMemory> as Lift>::lift(cx, ty, src)
+                .map(|a| WrappedMemory { inner: a, linear })
         }
 
         fn load(cx: &mut LiftContext<'_>, ty: InterfaceType, bytes: &[u8]) -> anyhow::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
-            <AttachOptions as Lift>::load(cx, ty, bytes)
-                .map(|a| WrappedAttachOptions { inner: a, linear })
+            <Resource<MyMemory> as Lift>::load(cx, ty, bytes)
+                .map(|a| WrappedMemory { inner: a, linear })
         }
     }
 
@@ -109,6 +110,7 @@ mod myshm {
             size,
             buffer_addr: 0,
             buffer_size: 0,
+            attached_addr: 0,
         })?,))
     }
 
@@ -118,7 +120,13 @@ mod myshm {
 
     fn attach<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
-        (objid, flags): (Resource<MyMemory>, WrappedAttachOptions),
+        (
+            WrappedMemory {
+                inner: objid,
+                linear,
+            },
+            flags,
+        ): (WrappedMemory, AttachOptions),
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
@@ -126,12 +134,12 @@ mod myshm {
         // let Some(Extern::Memory(memory)) = ctx.get_export("memory") else {
         //     bail!("Attach without linear memory");
         // };
-        let start = unsafe { flags.linear.byte_add(obj.buffer_addr as usize) };
+        let start = unsafe { linear.byte_add(obj.buffer_addr as usize) };
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
         let offset = start.align_offset(pagesize);
         let start = unsafe { start.add(offset) };
-        dbg!((flags.linear, obj.buffer_addr, start, offset, pagesize));
-        let prot = if flags.inner.contains(AttachOptions::WRITE) {
+        dbg!((linear, obj.buffer_addr, start, offset, pagesize));
+        let prot = if flags.contains(AttachOptions::WRITE) {
             libc::PROT_READ | libc::PROT_WRITE
         } else {
             libc::PROT_READ
@@ -151,8 +159,10 @@ mod myshm {
             && unsafe { addr.byte_add(obj.size as usize) }
                 <= unsafe { start.byte_add(obj.buffer_size as usize) }.cast()
         {
+            let obj = view.table().get_mut(&objid).unwrap();
+            obj.attached_addr = unsafe { addr.byte_offset_from(linear.cast::<c_void>()) } as u32;
             Ok((Ok(MemoryArea {
-                addr: unsafe { addr.byte_offset_from(flags.linear.cast::<c_void>()) } as u32,
+                addr: obj.attached_addr,
                 size: obj.size,
             }),))
         } else {
@@ -161,10 +171,22 @@ mod myshm {
     }
 
     fn detach<T: WasiView>(
-        _ctx: StoreContextMut<'_, T>,
-        (objid, consumed): (Resource<MyMemory>, u32),
+        mut ctx: StoreContextMut<'_, T>,
+        (
+            WrappedMemory {
+                inner: objid,
+                linear,
+            },
+            consumed,
+        ): (WrappedMemory, u32),
     ) -> wasmtime::Result<()> {
-        todo!()
+        let view = ctx.data_mut();
+        let obj = view.table().get(&objid).unwrap().clone();
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        let rounded = (obj.size + pagesize - 1) & (!(pagesize - 1));
+        let base = unsafe { linear.byte_add(obj.attached_addr as usize) };
+        unsafe { libc::munmap(base.cast(), rounded as usize) };
+        Ok(())
     }
 
     fn minimum_size<T: WasiView>(
