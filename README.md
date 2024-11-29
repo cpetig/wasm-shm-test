@@ -21,12 +21,12 @@ or more readable
 
 | name | param | result |
 | ---- | ----- | ------ |
-| constructor | size: i32 | id: i32 |
-| method minimum-size| id: i32 | alloc_size: i32|
-|method add-storage| id: i32 addr: i32 size: i32 *resultptr*: i32|👈|
-|method attach| id: i32 flags: i32 *resultptr*: i32|👈|
-|method detach| id: i32 consumed: i32|-|
-|drop| id: i32|-|
+| constructor | size | id |
+| method minimum-size| id | alloc_size|
+|method add-storage| id addr size *resultptr*|👈|
+|method attach| id flags *resultptr*|👈|
+|method detach| id consumed|-|
+|drop| id|-|
 
 See shm.wit for more in depth explanations of the semantics.
 
