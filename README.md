@@ -33,3 +33,16 @@ See shm.wit for more in depth explanations of the semantics.
 Please note that the guest is providing storage inside its linear memory 
 but can never control the address used, e.g. due to page alignment 
 or other MMU/MPU restrictions.
+
+## Inside this example
+
+The main component allocates a shared buffer, passes it to a reactor (impl) 
+which attaches the buffer, increments the specified byte and returns. Then
+the main component attaches the buffer and verifies the requested increments.
+
+These components are compiled as wasm components and the provided runtime is 
+based on wasmtime, and provides the shared memory primitives.
+
+Caveat: This implementation isn't checking the semantic behavior 
+(exclusive attach) and abuses wasmtime internals. 
+**Don't plan to use it in production!**
