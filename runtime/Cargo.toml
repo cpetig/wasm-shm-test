@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.93"
 libc = "0.2.166"
-wasmtime = "29.0.1"
-wasmtime-wasi = "29.0.1"
+wasmtime = "35.0.0"
+wasmtime-wasi = "35.0.0"

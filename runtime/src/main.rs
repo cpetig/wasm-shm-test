@@ -5,7 +5,9 @@ use wasmtime::{
     Config, Engine, Store,
 };
 use wasmtime_wasi::{
-    self, bindings::sync::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView,
+    self,
+    p2::{bindings::sync::Command, IoView, WasiCtx, WasiCtxBuilder, WasiView},
+    ResourceTable,
 };
 
 wasmtime::component::bindgen!({
@@ -48,16 +50,24 @@ impl WasiView for HostState {
     fn ctx(&mut self) -> &mut WasiCtx {
         &mut self.ctx
     }
+}
+
+impl IoView for HostState {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
 }
+
+struct SendMemory<T>(*mut T);
+
+unsafe impl<T> Send for SendMemory<T> {}
 
 mod myshm {
     use std::ffi::{c_char, c_void};
 
     use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
     use super::MyMemory;
+    use super::SendMemory;
     use wasmtime::{
         component::{
             ComponentType, Lift, Resource, ResourceType,
@@ -65,12 +75,12 @@ mod myshm {
         },
         StoreContextMut,
     };
-    use wasmtime_wasi::WasiView;
+    use wasmtime_wasi::p2::WasiView;
 
     // Hack: We wrap this type to remember the pointer to the linear memory from the lifting
     struct WrappedMemory {
         inner: Resource<MyMemory>,
-        linear: *mut u8,
+        linear: SendMemory<u8>,
     }
 
     unsafe impl ComponentType for WrappedMemory {
@@ -82,22 +92,36 @@ mod myshm {
     }
 
     unsafe impl Lift for WrappedMemory {
-        fn lift(
+        fn linear_lift_from_flat(
             cx: &mut LiftContext<'_>,
             ty: InterfaceType,
             src: &Self::Lower,
         ) -> anyhow::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
-            <Resource<MyMemory> as Lift>::lift(cx, ty, src)
-                .map(|a| WrappedMemory { inner: a, linear })
+            <Resource<MyMemory> as Lift>::linear_lift_from_flat(cx, ty, src).map(|a| {
+                WrappedMemory {
+                    inner: a,
+                    linear: SendMemory(linear),
+                }
+            })
         }
 
-        fn load(cx: &mut LiftContext<'_>, ty: InterfaceType, bytes: &[u8]) -> anyhow::Result<Self> {
+        fn linear_lift_from_memory(
+            cx: &mut LiftContext<'_>,
+            ty: InterfaceType,
+            bytes: &[u8],
+        ) -> anyhow::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
-            <Resource<MyMemory> as Lift>::load(cx, ty, bytes)
-                .map(|a| WrappedMemory { inner: a, linear })
+            <Resource<MyMemory> as Lift>::linear_lift_from_memory(cx, ty, bytes).map(|a| {
+                WrappedMemory {
+                    inner: a,
+                    linear: SendMemory(linear),
+                }
+            })
         }
     }
+
+    unsafe impl Sync for WrappedMemory {}
 
     fn new<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
@@ -139,11 +163,11 @@ mod myshm {
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
-        let start = unsafe { linear.byte_add(obj.buffer_addr as usize) };
+        let start = unsafe { linear.0.byte_add(obj.buffer_addr as usize) };
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
         let offset = start.align_offset(pagesize);
         let start = unsafe { start.add(offset) };
-        dbg!((linear, obj.buffer_addr, start, offset, pagesize));
+        dbg!((linear.0, obj.buffer_addr, start, offset, pagesize));
         let prot = if flags.contains(AttachOptions::WRITE) {
             libc::PROT_READ | libc::PROT_WRITE
         } else {
@@ -166,7 +190,7 @@ mod myshm {
         {
             let obj = view.table().get_mut(&objid).unwrap();
             obj.attached_addr = addr;
-            let linear_addr = unsafe { addr.byte_offset_from(linear.cast::<c_void>()) } as u32;
+            let linear_addr = unsafe { addr.byte_offset_from(linear.0.cast::<c_void>()) } as u32;
             Ok((Ok(MemoryArea {
                 addr: linear_addr,
                 size: obj.size,
@@ -178,7 +202,7 @@ mod myshm {
 
     fn detach<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
-        (objid, consumed): (Resource<MyMemory>, u32),
+        (objid, _consumed): (Resource<MyMemory>, u32),
     ) -> wasmtime::Result<()> {
         let view = ctx.data_mut();
         let obj = view.table().get_mut(&objid).unwrap();
@@ -251,7 +275,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut linker = Linker::new(&engine);
     myshm::add_to_linker(&mut linker)?;
-    wasmtime_wasi::add_to_linker_sync(&mut linker)?;
+    wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
 
     let command = Command::instantiate(&mut store, &component, &linker)?;
 
