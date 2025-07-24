@@ -1,0 +1,8 @@
+[package]
+name = "subscriber"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+publisher = { version = "0.1.0", path = "../publisher" }
+wasm-shm = { version = "0.1.0", path = "../../rust-client" }

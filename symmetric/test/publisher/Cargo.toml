@@ -1,0 +1,9 @@
+[package]
+name = "publisher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+symmetric_executor = { version = "0.1.0", path = "../../../../wit-bindgen/crates/symmetric_executor" }
+wasm-shm = { version = "0.1.0", path = "../../rust-client" }
+wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }

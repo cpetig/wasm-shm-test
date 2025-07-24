@@ -134,4 +134,7 @@ impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
     fn publish(&self, _value: Memory) {
         todo!()
     }
+    fn clone(_original: exports::test::shm::publisher::DataStreamBorrow<'_>) -> exports::test::shm::publisher::DataStream {
+        todo!()
+    }
 }

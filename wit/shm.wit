@@ -59,6 +59,8 @@ interface publisher {
     resource data-stream {
         /// create new data stream
         constructor(elements: u32, element-size: u32);
+        /// clone
+        clone: static func(original: borrow<data-stream>) -> data-stream;
         /// subscribers receive memory handles
         subscribe: func() -> stream<memory>;
         /// returns a memory buffer and a boolean indicating whether it contains old data
