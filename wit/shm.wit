@@ -54,8 +54,28 @@ interface exchange {
     }
 }
 
+interface publisher {
+    use exchange.{memory};
+    resource data-stream {
+        /// create new data stream
+        constructor(elements: u32, element-size: u32);
+        /// subscribers receive memory handles
+        subscribe: func() -> stream<memory>;
+        /// returns a memory buffer and a boolean indicating whether it contains old data
+        allocate: func() -> tuple<memory, bool>;
+        /// send data to clients
+        publish: func(value: memory);
+    }
+}
+
 world impl {
     export exchange;
+    export publisher;
+}
+
+world client {
+    import exchange;
+    import publisher;
 }
 
 interface image {

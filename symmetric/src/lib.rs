@@ -15,6 +15,8 @@ struct MyMemory {
     write: AtomicBool,
 }
 
+struct MyDataStream;
+
 struct Dummy;
 
 export!(SharedImpl);
@@ -26,6 +28,10 @@ use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, Memory
 impl exports::test::shm::exchange::Guest for SharedImpl {
     type Memory = MyMemory;
     type Address = Dummy;
+}
+
+impl exports::test::shm::publisher::Guest for SharedImpl {
+    type DataStream = MyDataStream;
 }
 
 impl exports::test::shm::exchange::GuestAddress for Dummy {}
@@ -112,5 +118,20 @@ impl exports::test::shm::exchange::GuestMemory for MyMemory {
             count: AtomicU32::new(0),
             write: AtomicBool::new(false),
         })
+    }
+}
+
+impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
+    fn new(_elements: u32, _element_size: u32) -> Self {
+        todo!()
+    }
+    fn subscribe(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
+        todo!()
+    }
+    fn allocate(&self) -> (Memory, bool) {
+        todo!()
+    }
+    fn publish(&self, _value: Memory) {
+        todo!()
     }
 }
