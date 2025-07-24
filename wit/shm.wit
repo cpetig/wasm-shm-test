@@ -3,8 +3,10 @@ package test:shm;
 // this only works as a host provided interface, it can't be composed,
 // defining it in this WIT is just because of tool compatibilty
 interface exchange {
+    resource address;
+
     record memory-area {
-        addr: u32,
+        addr: address,
         size: u32,
     }
     flags attach-options {
@@ -50,6 +52,10 @@ interface exchange {
 
         // the CM implicitely creates a destructor called "drop"
     }
+}
+
+world impl {
+    export exchange;
 }
 
 interface image {
