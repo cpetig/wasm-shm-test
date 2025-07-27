@@ -1,0 +1,4 @@
+world exports {
+    export monotonic-clock;
+    export wall-clock;
+}

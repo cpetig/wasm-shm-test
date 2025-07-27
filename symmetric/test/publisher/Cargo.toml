@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-symmetric_executor = { version = "0.1.0", path = "../../../../wit-bindgen/crates/symmetric_executor" }
-wasm-shm = { version = "0.1.0", path = "../../rust-client" }
+symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor" }
+wasi-clocks = { path = "../../wasi-clocks/import" }
+wasm-shm = { path = "../../rust-client" }
 wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }

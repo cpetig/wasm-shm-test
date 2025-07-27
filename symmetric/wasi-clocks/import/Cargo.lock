@@ -164,12 +164,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09edd9e8b54e49e587e4f6295a7d29c3ea94d469cb40ab8ca70b288248a81db2"
 
 [[package]]
-name = "libc"
-version = "0.2.174"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
-
-[[package]]
 name = "log"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -219,16 +213,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02b3e5e68a3a1a02aad3ec490a98007cbc13c37cbe84a3cd7b8e406d76e7f778"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "publisher"
-version = "0.1.0"
-dependencies = [
- "mini-bindgen",
- "symmetric_executor",
- "wasi-clocks",
- "wasm-shm",
 ]
 
 [[package]]
@@ -291,33 +275,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04dc19736151f35336d325007ac991178d504a119863a2fcb3758cdb5e52c50d"
 
 [[package]]
-name = "symmetric-sharedmem"
-version = "0.1.0"
-dependencies = [
- "mini-bindgen",
- "symmetric_executor",
- "symmetric_stream",
-]
-
-[[package]]
-name = "symmetric_executor"
-version = "0.1.0"
-dependencies = [
- "dummy-rt",
- "futures",
- "libc",
-]
-
-[[package]]
-name = "symmetric_stream"
-version = "0.1.0"
-dependencies = [
- "dummy-rt",
- "symmetric_executor",
- "wit-bindgen-symmetric-rt",
-]
-
-[[package]]
 name = "syn"
 version = "2.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,14 +322,6 @@ dependencies = [
  "indexmap",
  "wasm-encoder",
  "wasmparser",
-]
-
-[[package]]
-name = "wasm-shm"
-version = "0.1.0"
-dependencies = [
- "mini-bindgen",
- "symmetric-sharedmem",
 ]
 
 [[package]]

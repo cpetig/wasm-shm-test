@@ -498,6 +498,31 @@ pub mod test {
             }
             impl DataStream {
                 #[allow(unused_unsafe, clippy::all)]
+                /// clone
+                #[allow(async_fn_in_trait)]
+                pub fn clone(original: &DataStream) -> DataStream {
+                    unsafe {
+                        #[link(name = "symmetric_sharedmem")]
+                        #[link(wasm_import_module = "test:shm/publisher")]
+                        unsafe extern "C" {
+                            #[allow(non_snake_case)]
+                            #[cfg_attr(
+                                target_arch = "wasm32",
+                                link_name = "[static]data-stream.clone"
+                            )]
+                            fn testX3AshmX2FpublisherX00X5BstaticX5Ddata_streamX2Eclone(
+                                _: *mut u8,
+                            ) -> *mut u8;
+                        }
+                        let ret = testX3AshmX2FpublisherX00X5BstaticX5Ddata_streamX2Eclone(
+                            (original).handle() as *mut u8,
+                        );
+                        DataStream::from_handle(ret as usize)
+                    }
+                }
+            }
+            impl DataStream {
+                #[allow(unused_unsafe, clippy::all)]
                 /// subscribers receive memory handles
                 #[allow(async_fn_in_trait)]
                 pub fn subscribe(
@@ -816,8 +841,8 @@ pub mod wit_stream {
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 890] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xfd\x05\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 935] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xaa\x06\x01A\x02\x01\
 A\x05\x01B\x19\x04\0\x07address\x03\x01\x01i\0\x01r\x02\x04addr\x01\x04sizey\x04\
 \0\x0bmemory-area\x03\0\x02\x01n\x03\x05write\x06shared\x05block\x04\0\x0eattach\
 -options\x03\0\x04\x01m\x04\x0ano-storage\x04busy\x0awrong-size\x08internal\x04\0\
@@ -828,15 +853,16 @@ A\x05\x01B\x19\x04\0\x07address\x03\x01\x01i\0\x01r\x02\x04addr\x01\x04sizey\x04
 y\x04\0\x1b[method]memory.minimum-size\x01\x0f\x01j\0\x01\x07\x01@\x02\x04self\x0b\
 \x06buffer\x03\0\x10\x04\0\x1a[method]memory.add-storage\x01\x11\x01@\x01\x06buf\
 fer\x03\0\x09\x04\0\x1b[static]memory.create-local\x01\x12\x03\0\x11test:shm/exc\
-hange\x05\0\x02\x03\0\0\x06memory\x01B\x10\x02\x03\x02\x01\x01\x04\0\x06memory\x03\
+hange\x05\0\x02\x03\0\0\x06memory\x01B\x12\x02\x03\x02\x01\x01\x04\0\x06memory\x03\
 \0\0\x04\0\x0bdata-stream\x03\x01\x01i\x02\x01@\x02\x08elementsy\x0celement-size\
-y\0\x03\x04\0\x18[constructor]data-stream\x01\x04\x01h\x02\x01i\x01\x01f\x01\x06\
-\x01@\x01\x04self\x05\0\x07\x04\0\x1d[method]data-stream.subscribe\x01\x08\x01o\x02\
-\x06\x7f\x01@\x01\x04self\x05\0\x09\x04\0\x1c[method]data-stream.allocate\x01\x0a\
-\x01@\x02\x04self\x05\x05value\x06\x01\0\x04\0\x1b[method]data-stream.publish\x01\
-\x0b\x03\0\x12test:shm/publisher\x05\x02\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\
-\0\x06client\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
-0.235.0\x10wit-bindgen-rust\x060.43.0";
+y\0\x03\x04\0\x18[constructor]data-stream\x01\x04\x01h\x02\x01@\x01\x08original\x05\
+\0\x03\x04\0\x19[static]data-stream.clone\x01\x06\x01i\x01\x01f\x01\x07\x01@\x01\
+\x04self\x05\0\x08\x04\0\x1d[method]data-stream.subscribe\x01\x09\x01o\x02\x07\x7f\
+\x01@\x01\x04self\x05\0\x0a\x04\0\x1c[method]data-stream.allocate\x01\x0b\x01@\x02\
+\x04self\x05\x05value\x07\x01\0\x04\0\x1b[method]data-stream.publish\x01\x0c\x03\
+\0\x12test:shm/publisher\x05\x02\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\0\x06\
+client\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.235\
+.0\x10wit-bindgen-rust\x060.43.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
