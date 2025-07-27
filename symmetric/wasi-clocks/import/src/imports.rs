@@ -32,7 +32,7 @@ pub mod wasi {
             #[allow(async_fn_in_trait)]
             pub fn now() -> Instant {
                 unsafe {
-                    #[link(name = "wasi-clocks-symmetric")]
+                    #[link(name = "wasi_clocks_symmetric")]
                     #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0")]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
@@ -49,7 +49,7 @@ pub mod wasi {
             #[allow(async_fn_in_trait)]
             pub fn resolution() -> Duration {
                 unsafe {
-                    #[link(name = "wasi-clocks-symmetric")]
+                    #[link(name = "wasi_clocks_symmetric")]
                     #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0")]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
@@ -227,7 +227,7 @@ pub mod wasi {
                     struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[link(name = "wasi-clocks-symmetric")]
+                    #[link(name = "wasi_clocks_symmetric")]
                     #[link(wasm_import_module = "wasi:clocks/wall-clock@0.3.0")]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
@@ -254,7 +254,7 @@ pub mod wasi {
                     struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[link(name = "wasi-clocks-symmetric")]
+                    #[link(name = "wasi_clocks_symmetric")]
                     #[link(wasm_import_module = "wasi:clocks/wall-clock@0.3.0")]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]

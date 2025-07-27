@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-publisher = { version = "0.1.0", path = "../publisher" }
-wasm-shm = { version = "0.1.0", path = "../../rust-client" }
+publisher = { path = "../publisher" }
+wasm-shm = { path = "../../rust-client" }
+wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }
+symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor" }
+symmetric_stream = { path = "../../../../wit-bindgen/crates/symmetric_executor/symmetric_stream" }
+wasi-clocks-symmetric = { version = "0.1.0", path = "../../wasi-clocks" }

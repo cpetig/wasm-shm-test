@@ -11,6 +11,7 @@ pub fn start() -> wasm_shm::DataStream {
     wit_bindgen::rt::async_support::spawn(async move {
         for i in 1..21 {
             wasi_clocks::monotonic_clock::wait_for(1_000_000_000).await;
+            // this could be hidden in bindgen code in some future
             let (buffer, _is_init) = writer.allocate();
             if let Ok(wasm_shm::MemoryArea { addr, size }) =
                 buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)
