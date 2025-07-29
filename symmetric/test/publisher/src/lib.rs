@@ -5,12 +5,24 @@ fn lower(src: u32, dest: Address) {
     *unsafe { &mut *((dest.take_handle() as *mut u8).cast::<u32>()) } = src;
 }
 
+mod easy_way_out {
+    use wit_bindgen::rt;
+
+    // only works on symmetric (avoids async function)
+    pub async fn wait_for(nanoseconds: u64) {
+        rt::async_support::wait_on(rt::EventSubscription::from_timeout(nanoseconds)).await;
+    }
+}
+
+use easy_way_out::wait_for;
+use wit_bindgen::rt;
+
 pub fn start() -> wasm_shm::DataStream {
     let publisher = wasm_shm::DataStream::new(5, 256);
     let writer = DataStream::clone(&publisher);
-    wit_bindgen::rt::async_support::spawn(async move {
+    rt::async_support::spawn(async move {
         for i in 1..21 {
-            wasi_clocks::monotonic_clock::wait_for(1_000_000_000).await;
+            wait_for(1_000_000_000).await;
             // this could be hidden in bindgen code in some future
             let (buffer, _is_init) = writer.allocate();
             if let Ok(wasm_shm::MemoryArea { addr, size }) =
