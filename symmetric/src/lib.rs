@@ -15,15 +15,28 @@ struct MyMemory {
     write: AtomicBool,
 }
 
-struct MyDataStream;
+struct MyDataStream {
+    elements: u32,
+    element_size: u32,
+    subscribers: Mutex<Vec<StreamWriter<Memory>>>,
+    pool: Mutex<VecDeque<Memory>>,
+}
 
 struct Dummy;
 
 export!(SharedImpl);
 
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::{
+    alloc::Layout,
+    collections::VecDeque,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering},
+        Mutex,
+    },
+};
 
 use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
+use wit_bindgen::StreamWriter;
 
 impl exports::test::shm::exchange::Guest for SharedImpl {
     type Memory = MyMemory;
@@ -122,11 +135,42 @@ impl exports::test::shm::exchange::GuestMemory for MyMemory {
 }
 
 impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
-    fn new(_elements: u32, _element_size: u32) -> Self {
-        todo!()
+    fn new(elements: u32, element_size: u32) -> Self {
+        use crate::exports::test::shm::exchange::GuestMemory;
+        let mut mem = Vec::new();
+        let alignment = if element_size < 2 || element_size & 1 != 0 {
+            1
+        } else if element_size < 4 || element_size & 2 != 0 {
+            2
+        } else if element_size < 8 || element_size & 4 != 0 {
+            4
+        } else {
+            8
+        };
+        for i in 0..elements {
+            let area = unsafe {
+                std::alloc::alloc(
+                    Layout::from_size_align(element_size as usize, alignment).unwrap(),
+                )
+            };
+            mem.push(MyMemory::create_local(MemoryArea {
+                addr: unsafe { Address::from_handle(area as usize) },
+                size: element_size,
+            }));
+        }
+        MyDataStream {
+            elements: elements,
+            element_size: element_size,
+            subscribers: Mutex::new(Vec::new()),
+            pool: Mutex::new(VecDeque::from(mem)),
+        }
     }
     fn subscribe(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
-        todo!()
+        let s = wit_stream::new::<Memory>();
+        self.subscribers.lock().unwrap().push(s.0);
+        s.1
+        // //exports::test::shm::
+        // todo!()
     }
     fn allocate(&self) -> (Memory, bool) {
         todo!()
@@ -134,7 +178,9 @@ impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
     fn publish(&self, _value: Memory) {
         todo!()
     }
-    fn clone(_original: exports::test::shm::publisher::DataStreamBorrow<'_>) -> exports::test::shm::publisher::DataStream {
+    fn clone(
+        _original: exports::test::shm::publisher::DataStreamBorrow<'_>,
+    ) -> exports::test::shm::publisher::DataStream {
         todo!()
     }
 }
