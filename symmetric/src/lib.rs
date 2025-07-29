@@ -31,27 +31,28 @@ use std::{
     collections::VecDeque,
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},
-        Mutex,
+        Arc, Mutex,
     },
 };
 
 use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
+use exports::test::shm::{exchange, publisher};
 use wit_bindgen::StreamWriter;
 
-impl exports::test::shm::exchange::Guest for SharedImpl {
-    type Memory = MyMemory;
+impl exchange::Guest for SharedImpl {
+    type Memory = Arc<MyMemory>;
     type Address = Dummy;
 }
 
-impl exports::test::shm::publisher::Guest for SharedImpl {
-    type DataStream = MyDataStream;
+impl publisher::Guest for SharedImpl {
+    type DataStream = Arc<MyDataStream>;
 }
 
-impl exports::test::shm::exchange::GuestAddress for Dummy {}
+impl exchange::GuestAddress for Dummy {}
 
-impl exports::test::shm::exchange::GuestMemory for MyMemory {
+impl exchange::GuestMemory for Arc<MyMemory> {
     fn new(size: u32) -> Self {
-        Self {
+        Self::new(MyMemory {
             address: unsafe {
                 std::alloc::alloc(
                     std::alloc::Layout::from_size_align(
@@ -73,7 +74,7 @@ impl exports::test::shm::exchange::GuestMemory for MyMemory {
             used: AtomicU32::new(0),
             count: AtomicU32::new(0),
             write: AtomicBool::new(false),
-        }
+        })
     }
     fn attach(&self, opt: AttachOptions) -> Result<MemoryArea, Error> {
         if opt & AttachOptions::WRITE == AttachOptions::WRITE {
@@ -124,19 +125,22 @@ impl exports::test::shm::exchange::GuestMemory for MyMemory {
         todo!()
     }
     fn create_local(buffer: MemoryArea) -> Memory {
-        Memory::new(MyMemory {
+        Memory::new(Arc::new(MyMemory {
             address: buffer.addr.take_handle() as *mut u8,
             capacity: buffer.size,
             used: AtomicU32::new(0),
             count: AtomicU32::new(0),
             write: AtomicBool::new(false),
-        })
+        }))
+    }
+    fn clone(&self) -> Memory {
+        Memory::new(Clone::clone(self))
     }
 }
 
-impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
+impl publisher::GuestDataStream for Arc<MyDataStream> {
     fn new(elements: u32, element_size: u32) -> Self {
-        use crate::exports::test::shm::exchange::GuestMemory;
+        use exchange::GuestMemory;
         let mut mem = Vec::new();
         let alignment = if element_size < 2 || element_size & 1 != 0 {
             1
@@ -147,40 +151,43 @@ impl exports::test::shm::publisher::GuestDataStream for MyDataStream {
         } else {
             8
         };
-        for i in 0..elements {
+        for _ in 0..elements {
             let area = unsafe {
                 std::alloc::alloc(
                     Layout::from_size_align(element_size as usize, alignment).unwrap(),
                 )
             };
-            mem.push(MyMemory::create_local(MemoryArea {
+            mem.push(Arc::<MyMemory>::create_local(MemoryArea {
                 addr: unsafe { Address::from_handle(area as usize) },
                 size: element_size,
             }));
         }
-        MyDataStream {
+        Arc::new(MyDataStream {
             elements: elements,
             element_size: element_size,
             subscribers: Mutex::new(Vec::new()),
             pool: Mutex::new(VecDeque::from(mem)),
-        }
+        })
     }
     fn subscribe(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
         let s = wit_stream::new::<Memory>();
         self.subscribers.lock().unwrap().push(s.0);
         s.1
-        // //exports::test::shm::
-        // todo!()
     }
     fn allocate(&self) -> (Memory, bool) {
-        todo!()
+        let buf = self.pool.lock().unwrap().pop_front().unwrap();
+        self.pool
+            .lock()
+            .unwrap()
+            .push_back(Memory::new(Arc::<MyMemory>::clone(buf.get())));
+        (buf, false)
     }
-    fn publish(&self, _value: Memory) {
-        todo!()
+    fn publish(&self, value: Memory) {
+        for i in self.subscribers.lock().unwrap().iter_mut() {
+            let _ = i.write_one(Memory::new(Arc::<MyMemory>::clone(value.get())));
+        }
     }
-    fn clone(
-        _original: exports::test::shm::publisher::DataStreamBorrow<'_>,
-    ) -> exports::test::shm::publisher::DataStream {
-        todo!()
+    fn clone(original: publisher::DataStreamBorrow<'_>) -> publisher::DataStream {
+        publisher::DataStream::new(Clone::clone(original.get::<Arc<MyDataStream>>()))
     }
 }

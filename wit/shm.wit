@@ -30,6 +30,9 @@ interface exchange {
     resource memory {
         // construct a memory buffer by size
         constructor(size: u32);
+
+        // only useful for shared buffers
+        clone: func() -> memory;
         
         // all non-static member functions implicitely borrow a 
         // memory object as the first argument
