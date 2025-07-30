@@ -29,6 +29,7 @@ export!(SharedImpl);
 use std::{
     alloc::Layout,
     collections::VecDeque,
+    future::IntoFuture,
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},
         Arc, Mutex,
@@ -37,7 +38,7 @@ use std::{
 
 use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
 use exports::test::shm::{exchange, publisher};
-use wit_bindgen::StreamWriter;
+use wit_bindgen::{rt::async_support, StreamWriter};
 
 impl exchange::Guest for SharedImpl {
     type Memory = Arc<MyMemory>;
@@ -183,8 +184,20 @@ impl publisher::GuestDataStream for Arc<MyDataStream> {
         (buf, false)
     }
     fn publish(&self, value: Memory) {
+        use futures::Future;
         for i in self.subscribers.lock().unwrap().iter_mut() {
-            let _ = i.write_one(Memory::new(Arc::<MyMemory>::clone(value.get())));
+            let mut fut = i
+                .write(vec![Memory::new(Arc::<MyMemory>::clone(value.get()))])
+                .into_future();
+            let waker = futures::task::Waker::noop();
+            let mut ctx = futures::task::Context::from_waker(&waker);
+            let mut pinned = std::pin::pin!(&mut fut);
+            match pinned.as_mut().poll(&mut ctx) {
+                std::task::Poll::Ready(_) => {}
+                std::task::Poll::Pending => (),
+            }
+
+            // fut.poll
         }
     }
     fn clone(original: publisher::DataStreamBorrow<'_>) -> publisher::DataStream {
