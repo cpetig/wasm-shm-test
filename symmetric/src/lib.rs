@@ -10,12 +10,14 @@ struct SharedImpl;
 struct MyMemory {
     address: *mut u8,
     capacity: u32,
-    used: AtomicU32,
-    count: AtomicU32,
+    written: AtomicU32,
+    read_consumed: AtomicU32,
+    attach_count: AtomicU32,
     write: AtomicBool,
+    shared: AtomicBool,
 }
 
-struct MyDataStream {
+struct MyPublisher {
     elements: u32,
     element_size: u32,
     subscribers: Mutex<Vec<StreamWriter<Memory>>>,
@@ -37,7 +39,7 @@ use std::{
 };
 
 use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
-use exports::test::shm::{exchange, publisher};
+use exports::test::shm::{exchange, pub_sub};
 use wit_bindgen::{rt::async_support, StreamWriter};
 
 impl exchange::Guest for SharedImpl {
@@ -45,8 +47,9 @@ impl exchange::Guest for SharedImpl {
     type Address = Dummy;
 }
 
-impl publisher::Guest for SharedImpl {
-    type DataStream = Arc<MyDataStream>;
+impl pub_sub::Guest for SharedImpl {
+    type Publisher = Arc<MyPublisher>;
+    type Subscriber = Arc<MyPublisher>;
 }
 
 impl exchange::GuestAddress for Dummy {}
@@ -72,50 +75,65 @@ impl exchange::GuestMemory for Arc<MyMemory> {
                 )
             },
             capacity: size,
-            used: AtomicU32::new(0),
-            count: AtomicU32::new(0),
+            written: AtomicU32::new(0),
+            attach_count: AtomicU32::new(0),
             write: AtomicBool::new(false),
+            read_consumed: AtomicU32::new(0),
+            shared: AtomicBool::new(false),
         })
     }
     fn attach(&self, opt: AttachOptions) -> Result<MemoryArea, Error> {
         if opt & AttachOptions::WRITE == AttachOptions::WRITE {
             if self
-                .count
+                .attach_count
                 .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
                 .is_err()
             {
                 return Err(Error::Busy);
             }
             self.write.store(true, Ordering::Relaxed);
-            self.used.store(0, Ordering::Release);
+            self.shared.store(
+                opt & AttachOptions::SHARED == AttachOptions::SHARED,
+                Ordering::Relaxed,
+            );
+            self.written.store(0, Ordering::Release);
             Ok(MemoryArea {
                 addr: unsafe { Address::from_handle(self.address as usize) },
                 size: self.capacity,
             })
         } else {
-            if self.write.load(Ordering::Acquire) == true && self.count.load(Ordering::Acquire) != 0
+            if self.write.load(Ordering::Acquire) == true
+                && self.attach_count.load(Ordering::Acquire) != 0
             {
                 return Err(Error::Busy);
             }
             let old_write = self.write.swap(false, Ordering::Relaxed);
-            let old_count = self.count.fetch_add(1, Ordering::Release);
+            let old_count = self.attach_count.fetch_add(1, Ordering::Release);
             if old_write == true && old_count != 0 {
                 return Err(Error::Busy);
             }
+            let shared = self.shared.load(Ordering::Relaxed);
+            let consumed = if shared {
+                self.read_consumed.load(Ordering::Relaxed)
+            } else {
+                0
+            };
             Ok(MemoryArea {
-                addr: unsafe { Address::from_handle(self.address as usize) },
-                size: self.used.load(Ordering::Relaxed),
+                addr: unsafe { Address::from_handle(self.address as usize + consumed as usize) },
+                size: self.written.load(Ordering::Relaxed) - consumed,
             })
         }
     }
     fn detach(&self, consumed: u32) {
         let write = self.write.load(Ordering::Acquire);
-        let count = self.count.fetch_sub(1, Ordering::Relaxed);
+        let count = self.attach_count.fetch_sub(1, Ordering::Relaxed);
         if write {
-            self.used.store(consumed, Ordering::Release);
+            self.written.store(consumed, Ordering::Release);
         } else {
-            if count == 1 {
-                self.used.fetch_sub(consumed, Ordering::Release);
+            let shared = self.shared.load(Ordering::Relaxed);
+            if !shared {
+                assert!(count == 1);
+                self.read_consumed.fetch_add(consumed, Ordering::Release);
             }
         }
     }
@@ -129,9 +147,11 @@ impl exchange::GuestMemory for Arc<MyMemory> {
         Memory::new(Arc::new(MyMemory {
             address: buffer.addr.take_handle() as *mut u8,
             capacity: buffer.size,
-            used: AtomicU32::new(0),
-            count: AtomicU32::new(0),
+            written: AtomicU32::new(0),
+            attach_count: AtomicU32::new(0),
             write: AtomicBool::new(false),
+            read_consumed: AtomicU32::new(0),
+            shared: AtomicBool::new(false),
         }))
     }
     fn clone(&self) -> Memory {
@@ -139,7 +159,19 @@ impl exchange::GuestMemory for Arc<MyMemory> {
     }
 }
 
-impl publisher::GuestDataStream for Arc<MyDataStream> {
+impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
+    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
+        let s = wit_stream::new::<Memory>();
+        self.subscribers.lock().unwrap().push(s.0);
+        s.1
+    }
+
+    fn clone(original: pub_sub::SubscriberBorrow<'_>) -> pub_sub::Subscriber {
+        pub_sub::Subscriber::new(Clone::clone(original.get::<Arc<MyPublisher>>()))
+    }
+}
+
+impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     fn new(elements: u32, element_size: u32) -> Self {
         use exchange::GuestMemory;
         let mut mem = Vec::new();
@@ -163,25 +195,20 @@ impl publisher::GuestDataStream for Arc<MyDataStream> {
                 size: element_size,
             }));
         }
-        Arc::new(MyDataStream {
+        Arc::new(MyPublisher {
             elements: elements,
             element_size: element_size,
             subscribers: Mutex::new(Vec::new()),
             pool: Mutex::new(VecDeque::from(mem)),
         })
     }
-    fn subscribe(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
-        let s = wit_stream::new::<Memory>();
-        self.subscribers.lock().unwrap().push(s.0);
-        s.1
-    }
-    fn allocate(&self) -> (Memory, bool) {
+    fn allocate(&self) -> (Memory, u32) {
         let buf = self.pool.lock().unwrap().pop_front().unwrap();
         self.pool
             .lock()
             .unwrap()
             .push_back(Memory::new(Arc::<MyMemory>::clone(buf.get())));
-        (buf, false)
+        (buf, 0)
     }
     fn publish(&self, value: Memory) {
         use futures::Future;
@@ -200,7 +227,11 @@ impl publisher::GuestDataStream for Arc<MyDataStream> {
             // fut.poll
         }
     }
-    fn clone(original: publisher::DataStreamBorrow<'_>) -> publisher::DataStream {
-        publisher::DataStream::new(Clone::clone(original.get::<Arc<MyDataStream>>()))
+    fn subscribers(&self) -> pub_sub::Subscriber {
+        pub_sub::Subscriber::new(Clone::clone(self))
     }
+
+    // fn clone(original: pub_sub::PublisherBorrow<'_>) -> pub_sub::Publisher {
+    //     pub_sub::Publisher::new(Clone::clone(original.get::<Arc<MyPublisher>>()))
+    // }
 }

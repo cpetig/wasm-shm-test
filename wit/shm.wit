@@ -5,9 +5,14 @@ package test:shm;
 interface exchange {
     resource address;
 
+    type bytes = u32;
+    record initialized-region {
+        start: bytes,
+        end: bytes,
+    }
     record memory-area {
         addr: address,
-        size: u32,
+        size: bytes,
     }
     flags attach-options {
         // attach memory in write mode (exclusive operation)
@@ -15,7 +20,8 @@ interface exchange {
         // write: the data inside this buffer can be read multiple times without breaking ownership semantics
         shared,
         // extension: wait for the buffer to become available (write: empty, read: filled)
-        block,
+        // better handled by streams/futures?
+        // block,
     }
     enum error {
         // no storage provided for attach
@@ -29,7 +35,7 @@ interface exchange {
     }
     resource memory {
         // construct a memory buffer by size
-        constructor(size: u32);
+        constructor(size: bytes);
 
         // only useful for shared buffers
         clone: func() -> memory;
@@ -40,11 +46,11 @@ interface exchange {
         // attach memory buffer into linear memory
         attach: func(opt: attach-options) -> result<memory-area, error>;
         // detach buffer, consumed bytes have been written/read
-        detach: func(consumed: u32);
+        detach: func(consumed: bytes);
 
         // pre-allocate position inside linear memory:
         // get recommended allocation size
-        minimum-size: func() -> u32;
+        minimum-size: func() -> bytes;
         // buffers need a position in linear memory to attach to, 
         // this function provides a pre-allocated area,
         // the area should be at least "minimum-size" big
@@ -57,17 +63,23 @@ interface exchange {
     }
 }
 
-interface publisher {
-    use exchange.{memory};
-    resource data-stream {
-        /// create new data stream
-        constructor(elements: u32, element-size: u32);
-        /// clone
-        clone: static func(original: borrow<data-stream>) -> data-stream;
+interface pub-sub {
+    use exchange.{memory, bytes};
+    resource subscriber {
         /// subscribers receive memory handles
-        subscribe: func() -> stream<memory>;
-        /// returns a memory buffer and a boolean indicating whether it contains old data
-        allocate: func() -> tuple<memory, bool>;
+        get-stream: func() -> stream<memory>;
+        /// clone
+        clone: static func(original: borrow<subscriber>) -> subscriber;
+    }
+    resource publisher {
+        /// create new data stream
+        constructor(elements: u32, element-size: bytes);
+        /// clone
+        //clone: static func(original: borrow<publisher>) -> publisher;
+        subscribers: func() -> subscriber;
+        /// returns a memory buffer and number of already initialized bytes 
+        /// (from last write)
+        allocate: func() -> tuple<memory, bytes>;
         /// send data to clients
         publish: func(value: memory);
     }
@@ -75,12 +87,20 @@ interface publisher {
 
 world impl {
     export exchange;
-    export publisher;
+    export pub-sub;
+}
+
+world impl1 {
+    export exchange;
+}
+
+world impl2 {
+    export pub-sub;
 }
 
 world client {
     import exchange;
-    import publisher;
+    import pub-sub;
 }
 
 interface image {
