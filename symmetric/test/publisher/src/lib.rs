@@ -5,6 +5,18 @@ fn lower(src: u32, dest: Address) {
     *unsafe { &mut *((dest.take_handle() as *mut u8).cast::<u32>()) } = src;
 }
 
+// attach buffer and write value to it
+// this could be hidden in bindgen code in some future
+fn write_to_buffer(value: u32, buffer: &mut wasm_shm::Memory) -> Result<(), wasm_shm::Error> {
+    let wasm_shm::MemoryArea { addr, size } =
+    buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)?;
+    assert!(size as usize >= std::mem::size_of::<u32>());
+    lower(value, addr);
+    buffer.detach(std::mem::size_of::<u32>() as u32);
+    Ok(())
+}
+
+// a simple replacement for wasi::clocks::monotonic_clock::wait_for (no async)
 mod easy_way_out {
     use wit_bindgen::rt;
 
@@ -23,14 +35,8 @@ pub fn start() -> wasm_shm::Subscriber {
     rt::async_support::spawn(async move {
         for i in 1..21 {
             wait_for(1_000_000_000).await;
-            // this could be hidden in bindgen code in some future
-            let (buffer, _is_init) = publisher.allocate();
-            if let Ok(wasm_shm::MemoryArea { addr, size }) =
-                buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)
-            {
-                assert!(size as usize >= std::mem::size_of::<u32>());
-                lower(i, addr);
-                buffer.detach(std::mem::size_of::<u32>() as u32);
+            let (mut buffer, _initialized) = publisher.allocate();
+            if write_to_buffer(i, &mut buffer).is_ok() {
                 publisher.publish(buffer);
             }
         }
