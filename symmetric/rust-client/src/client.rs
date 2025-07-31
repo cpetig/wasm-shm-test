@@ -54,9 +54,10 @@ pub mod test {
                     };
                 }
             }
+            pub type Bytes = u32;
             pub struct MemoryArea {
                 pub addr: Address,
-                pub size: u32,
+                pub size: Bytes,
             }
             impl ::core::fmt::Debug for MemoryArea {
                 fn fmt(
@@ -75,9 +76,7 @@ pub mod test {
                 " attach memory in write mode (exclusive operation)"] const WRITE = 1 <<
                 0; #[doc =
                 " write: the data inside this buffer can be read multiple times without breaking ownership semantics"]
-                const SHARED = 1 << 1; #[doc =
-                " extension: wait for the buffer to become available (write: empty, read: filled)"]
-                const BLOCK = 1 << 2; }
+                const SHARED = 1 << 1; }
             }
             #[repr(u8)]
             #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
@@ -193,7 +192,7 @@ pub mod test {
                 #[allow(unused_unsafe, clippy::all)]
                 /// construct a memory buffer by size
                 #[allow(async_fn_in_trait)]
-                pub fn new(size: u32) -> Self {
+                pub fn new(size: Bytes) -> Self {
                     unsafe {
                         #[link(name = "symmetric_sharedmem")]
                         #[link(wasm_import_module = "test:shm/exchange")]
@@ -208,7 +207,7 @@ pub mod test {
                             ) -> *mut u8;
                         }
                         let ret = testX3AshmX2FexchangeX00X5BconstructorX5Dmemory(
-                            _rt::as_i32(&size),
+                            _rt::as_i32(size),
                         );
                         Memory::from_handle(ret as usize)
                     }
@@ -314,7 +313,7 @@ pub mod test {
                 #[allow(unused_unsafe, clippy::all)]
                 /// detach buffer, consumed bytes have been written/read
                 #[allow(async_fn_in_trait)]
-                pub fn detach(&self, consumed: u32) -> () {
+                pub fn detach(&self, consumed: Bytes) -> () {
                     unsafe {
                         #[link(name = "symmetric_sharedmem")]
                         #[link(wasm_import_module = "test:shm/exchange")]
@@ -331,7 +330,7 @@ pub mod test {
                         }
                         testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Edetach(
                             (self).handle() as *mut u8,
-                            _rt::as_i32(&consumed),
+                            _rt::as_i32(consumed),
                         );
                     }
                 }
@@ -341,7 +340,7 @@ pub mod test {
                 /// pre-allocate position inside linear memory:
                 /// get recommended allocation size
                 #[allow(async_fn_in_trait)]
-                pub fn minimum_size(&self) -> u32 {
+                pub fn minimum_size(&self) -> Bytes {
                     unsafe {
                         #[link(name = "symmetric_sharedmem")]
                         #[link(wasm_import_module = "test:shm/exchange")]
@@ -446,18 +445,19 @@ pub mod test {
             }
         }
         #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-        pub mod publisher {
+        pub mod pub_sub {
             #[used]
             #[doc(hidden)]
             static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             pub type Memory = super::super::super::test::shm::exchange::Memory;
+            pub type Bytes = super::super::super::test::shm::exchange::Bytes;
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct DataStream {
-                handle: _rt::Resource<DataStream>,
+            pub struct Subscriber {
+                handle: _rt::Resource<Subscriber>,
             }
-            impl DataStream {
+            impl Subscriber {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: usize) -> Self {
                     Self {
@@ -473,100 +473,90 @@ pub mod test {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for DataStream {
+            unsafe impl _rt::WasmResource for Subscriber {
                 #[inline]
                 unsafe fn drop(_handle: usize) {
-                    #[link(wasm_import_module = "test:shm/publisher")]
+                    #[link(wasm_import_module = "test:shm/pub-sub")]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
                         #[cfg_attr(
                             target_arch = "wasm32",
-                            link_name = "[resource-drop]data-stream"
+                            link_name = "[resource-drop]subscriber"
                         )]
-                        fn testX3AshmX2FpublisherX00X5Bresource_dropX5Ddata_stream(
+                        fn testX3AshmX2Fpub_subX00X5Bresource_dropX5Dsubscriber(
                             _: *mut u8,
                         );
                     }
                     unsafe {
-                        testX3AshmX2FpublisherX00X5Bresource_dropX5Ddata_stream(
+                        testX3AshmX2Fpub_subX00X5Bresource_dropX5Dsubscriber(
                             _handle as *mut u8,
                         )
                     };
                 }
             }
-            impl DataStream {
-                #[allow(unused_unsafe, clippy::all)]
-                /// create new data stream
-                #[allow(async_fn_in_trait)]
-                pub fn new(elements: u32, element_size: u32) -> Self {
-                    unsafe {
-                        #[link(name = "symmetric_sharedmem")]
-                        #[link(wasm_import_module = "test:shm/publisher")]
-                        unsafe extern "C" {
-                            #[allow(non_snake_case)]
-                            #[cfg_attr(
-                                target_arch = "wasm32",
-                                link_name = "[constructor]data-stream"
-                            )]
-                            fn testX3AshmX2FpublisherX00X5BconstructorX5Ddata_stream(
-                                _: i32,
-                                _: i32,
-                            ) -> *mut u8;
-                        }
-                        let ret = testX3AshmX2FpublisherX00X5BconstructorX5Ddata_stream(
-                            _rt::as_i32(&elements),
-                            _rt::as_i32(&element_size),
-                        );
-                        DataStream::from_handle(ret as usize)
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Publisher {
+                handle: _rt::Resource<Publisher>,
+            }
+            impl Publisher {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: usize) -> Self {
+                    Self {
+                        handle: unsafe { _rt::Resource::from_handle(handle) },
                     }
                 }
-            }
-            impl DataStream {
-                #[allow(unused_unsafe, clippy::all)]
-                /// clone
-                #[allow(async_fn_in_trait)]
-                pub fn clone(original: &DataStream) -> DataStream {
-                    unsafe {
-                        #[link(name = "symmetric_sharedmem")]
-                        #[link(wasm_import_module = "test:shm/publisher")]
-                        unsafe extern "C" {
-                            #[allow(non_snake_case)]
-                            #[cfg_attr(
-                                target_arch = "wasm32",
-                                link_name = "[static]data-stream.clone"
-                            )]
-                            fn testX3AshmX2FpublisherX00X5BstaticX5Ddata_streamX2Eclone(
-                                _: *mut u8,
-                            ) -> *mut u8;
-                        }
-                        let ret = testX3AshmX2FpublisherX00X5BstaticX5Ddata_streamX2Eclone(
-                            (original).handle() as *mut u8,
-                        );
-                        DataStream::from_handle(ret as usize)
-                    }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> usize {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> usize {
+                    _rt::Resource::handle(&self.handle)
                 }
             }
-            impl DataStream {
+            unsafe impl _rt::WasmResource for Publisher {
+                #[inline]
+                unsafe fn drop(_handle: usize) {
+                    #[link(wasm_import_module = "test:shm/pub-sub")]
+                    unsafe extern "C" {
+                        #[allow(non_snake_case)]
+                        #[cfg_attr(
+                            target_arch = "wasm32",
+                            link_name = "[resource-drop]publisher"
+                        )]
+                        fn testX3AshmX2Fpub_subX00X5Bresource_dropX5Dpublisher(
+                            _: *mut u8,
+                        );
+                    }
+                    unsafe {
+                        testX3AshmX2Fpub_subX00X5Bresource_dropX5Dpublisher(
+                            _handle as *mut u8,
+                        )
+                    };
+                }
+            }
+            impl Subscriber {
                 #[allow(unused_unsafe, clippy::all)]
                 /// subscribers receive memory handles
                 #[allow(async_fn_in_trait)]
-                pub fn subscribe(
+                pub fn get_stream(
                     &self,
                 ) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
                     unsafe {
                         #[link(name = "symmetric_sharedmem")]
-                        #[link(wasm_import_module = "test:shm/publisher")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]data-stream.subscribe"
+                                link_name = "[method]subscriber.get-stream"
                             )]
-                            fn testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Esubscribe(
+                            fn testX3AshmX2Fpub_subX00X5BmethodX5DsubscriberX2Eget_stream(
                                 _: *mut u8,
                             ) -> *mut u8;
                         }
-                        let ret = testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Esubscribe(
+                        let ret = testX3AshmX2Fpub_subX00X5BmethodX5DsubscriberX2Eget_stream(
                             (self).handle() as *mut u8,
                         );
                         wit_bindgen::rt::async_support::StreamReader::new(
@@ -576,11 +566,90 @@ pub mod test {
                     }
                 }
             }
-            impl DataStream {
+            impl Subscriber {
                 #[allow(unused_unsafe, clippy::all)]
-                /// returns a memory buffer and a boolean indicating whether it contains old data
+                /// clone
                 #[allow(async_fn_in_trait)]
-                pub fn allocate(&self) -> (Memory, bool) {
+                pub fn clone(original: &Subscriber) -> Subscriber {
+                    unsafe {
+                        #[link(name = "symmetric_sharedmem")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
+                        unsafe extern "C" {
+                            #[allow(non_snake_case)]
+                            #[cfg_attr(
+                                target_arch = "wasm32",
+                                link_name = "[static]subscriber.clone"
+                            )]
+                            fn testX3AshmX2Fpub_subX00X5BstaticX5DsubscriberX2Eclone(
+                                _: *mut u8,
+                            ) -> *mut u8;
+                        }
+                        let ret = testX3AshmX2Fpub_subX00X5BstaticX5DsubscriberX2Eclone(
+                            (original).handle() as *mut u8,
+                        );
+                        Subscriber::from_handle(ret as usize)
+                    }
+                }
+            }
+            impl Publisher {
+                #[allow(unused_unsafe, clippy::all)]
+                /// create new data stream
+                #[allow(async_fn_in_trait)]
+                pub fn new(elements: u32, element_size: Bytes) -> Self {
+                    unsafe {
+                        #[link(name = "symmetric_sharedmem")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
+                        unsafe extern "C" {
+                            #[allow(non_snake_case)]
+                            #[cfg_attr(
+                                target_arch = "wasm32",
+                                link_name = "[constructor]publisher"
+                            )]
+                            fn testX3AshmX2Fpub_subX00X5BconstructorX5Dpublisher(
+                                _: i32,
+                                _: i32,
+                            ) -> *mut u8;
+                        }
+                        let ret = testX3AshmX2Fpub_subX00X5BconstructorX5Dpublisher(
+                            _rt::as_i32(&elements),
+                            _rt::as_i32(element_size),
+                        );
+                        Publisher::from_handle(ret as usize)
+                    }
+                }
+            }
+            impl Publisher {
+                #[allow(unused_unsafe, clippy::all)]
+                /// clone
+                /// clone: static func(original: borrow<publisher>) -> publisher;
+                #[allow(async_fn_in_trait)]
+                pub fn subscribers(&self) -> Subscriber {
+                    unsafe {
+                        #[link(name = "symmetric_sharedmem")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
+                        unsafe extern "C" {
+                            #[allow(non_snake_case)]
+                            #[cfg_attr(
+                                target_arch = "wasm32",
+                                link_name = "[method]publisher.subscribers"
+                            )]
+                            fn testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Esubscribers(
+                                _: *mut u8,
+                            ) -> *mut u8;
+                        }
+                        let ret = testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Esubscribers(
+                            (self).handle() as *mut u8,
+                        );
+                        Subscriber::from_handle(ret as usize)
+                    }
+                }
+            }
+            impl Publisher {
+                #[allow(unused_unsafe, clippy::all)]
+                /// returns a memory buffer and number of already initialized bytes
+                /// (from last write)
+                #[allow(async_fn_in_trait)]
+                pub fn allocate(&self) -> (Memory, Bytes) {
                     unsafe {
                         #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
                         #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
@@ -595,55 +664,55 @@ pub mod test {
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[link(name = "symmetric_sharedmem")]
-                        #[link(wasm_import_module = "test:shm/publisher")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]data-stream.allocate"
+                                link_name = "[method]publisher.allocate"
                             )]
-                            fn testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Eallocate(
+                            fn testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Eallocate(
                                 _: *mut u8,
                                 _: *mut u8,
                             );
                         }
-                        testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Eallocate(
+                        testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Eallocate(
                             (self).handle() as *mut u8,
                             ptr0,
                         );
                         let l1 = *ptr0.add(0).cast::<*mut u8>();
-                        let l2 = i32::from(
-                            *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
-                        );
+                        let l2 = *ptr0
+                            .add(::core::mem::size_of::<*const u8>())
+                            .cast::<i32>();
                         (
                             super::super::super::test::shm::exchange::Memory::from_handle(
                                 l1 as usize,
                             ),
-                            _rt::bool_lift(l2 as u8),
+                            l2 as u32,
                         )
                     }
                 }
             }
-            impl DataStream {
+            impl Publisher {
                 #[allow(unused_unsafe, clippy::all)]
                 /// send data to clients
                 #[allow(async_fn_in_trait)]
                 pub fn publish(&self, value: Memory) -> () {
                     unsafe {
                         #[link(name = "symmetric_sharedmem")]
-                        #[link(wasm_import_module = "test:shm/publisher")]
+                        #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]data-stream.publish"
+                                link_name = "[method]publisher.publish"
                             )]
-                            fn testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Epublish(
+                            fn testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Epublish(
                                 _: *mut u8,
                                 _: *mut u8,
                             );
                         }
-                        testX3AshmX2FpublisherX00X5BmethodX5Ddata_streamX2Epublish(
+                        testX3AshmX2Fpub_subX00X5BmethodX5DpublisherX2Epublish(
                             (self).handle() as *mut u8,
                             (&value).take_handle() as *mut u8,
                         );
@@ -796,17 +865,6 @@ mod _rt {
             unsafe { core::hint::unreachable_unchecked() }
         }
     }
-    pub unsafe fn bool_lift(val: u8) -> bool {
-        if cfg!(debug_assertions) {
-            match val {
-                0 => false,
-                1 => true,
-                _ => panic!("invalid bool discriminant"),
-            }
-        } else {
-            val != 0
-        }
-    }
 }
 pub mod wit_stream {
     #![allow(dead_code, unused_variables, clippy::all)]
@@ -816,16 +874,13 @@ pub mod wit_stream {
     #[doc(hidden)]
     #[allow(unused_unsafe)]
     pub mod vtable0 {
-        unsafe fn lift(ptr: *mut u8) -> super::super::test::shm::publisher::Memory {
+        unsafe fn lift(ptr: *mut u8) -> super::super::test::shm::pub_sub::Memory {
             unsafe {
                 let l0 = *ptr.add(0).cast::<*mut u8>();
                 super::super::test::shm::exchange::Memory::from_handle(l0 as usize)
             }
         }
-        unsafe fn lower(
-            value: super::super::test::shm::publisher::Memory,
-            ptr: *mut u8,
-        ) {
+        unsafe fn lower(value: super::super::test::shm::pub_sub::Memory, ptr: *mut u8) {
             unsafe {
                 *ptr.add(0).cast::<*mut u8>() = (value).take_handle() as *mut u8;
             }
@@ -834,9 +889,9 @@ pub mod wit_stream {
             unsafe {}
         }
         pub static VTABLE: wit_bindgen::rt::async_support::StreamVtable<
-            super::super::test::shm::publisher::Memory,
+            super::super::test::shm::pub_sub::Memory,
         > = wit_bindgen::rt::async_support::StreamVtable::<
-            super::super::test::shm::publisher::Memory,
+            super::super::test::shm::pub_sub::Memory,
         > {
             layout: unsafe {
                 ::std::alloc::Layout::from_size_align_unchecked(
@@ -847,7 +902,7 @@ pub mod wit_stream {
             lift: Some(lift),
             lower: Some(lower),
         };
-        impl super::StreamPayload for super::super::test::shm::publisher::Memory {
+        impl super::StreamPayload for super::super::test::shm::pub_sub::Memory {
             const VTABLE: &'static wit_bindgen::rt::async_support::StreamVtable<Self> = &VTABLE;
         }
     }
@@ -866,29 +921,32 @@ pub mod wit_stream {
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 971] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xce\x06\x01A\x02\x01\
-A\x05\x01B\x1b\x04\0\x07address\x03\x01\x01i\0\x01r\x02\x04addr\x01\x04sizey\x04\
-\0\x0bmemory-area\x03\0\x02\x01n\x03\x05write\x06shared\x05block\x04\0\x0eattach\
--options\x03\0\x04\x01m\x04\x0ano-storage\x04busy\x0awrong-size\x08internal\x04\0\
-\x05error\x03\0\x06\x04\0\x06memory\x03\x01\x01i\x08\x01@\x01\x04sizey\0\x09\x04\
-\0\x13[constructor]memory\x01\x0a\x01h\x08\x01@\x01\x04self\x0b\0\x09\x04\0\x14[\
-method]memory.clone\x01\x0c\x01j\x01\x03\x01\x07\x01@\x02\x04self\x0b\x03opt\x05\
-\0\x0d\x04\0\x15[method]memory.attach\x01\x0e\x01@\x02\x04self\x0b\x08consumedy\x01\
-\0\x04\0\x15[method]memory.detach\x01\x0f\x01@\x01\x04self\x0b\0y\x04\0\x1b[meth\
-od]memory.minimum-size\x01\x10\x01j\0\x01\x07\x01@\x02\x04self\x0b\x06buffer\x03\
-\0\x11\x04\0\x1a[method]memory.add-storage\x01\x12\x01@\x01\x06buffer\x03\0\x09\x04\
-\0\x1b[static]memory.create-local\x01\x13\x03\0\x11test:shm/exchange\x05\0\x02\x03\
-\0\0\x06memory\x01B\x12\x02\x03\x02\x01\x01\x04\0\x06memory\x03\0\0\x04\0\x0bdat\
-a-stream\x03\x01\x01i\x02\x01@\x02\x08elementsy\x0celement-sizey\0\x03\x04\0\x18\
-[constructor]data-stream\x01\x04\x01h\x02\x01@\x01\x08original\x05\0\x03\x04\0\x19\
-[static]data-stream.clone\x01\x06\x01i\x01\x01f\x01\x07\x01@\x01\x04self\x05\0\x08\
-\x04\0\x1d[method]data-stream.subscribe\x01\x09\x01o\x02\x07\x7f\x01@\x01\x04sel\
-f\x05\0\x0a\x04\0\x1c[method]data-stream.allocate\x01\x0b\x01@\x02\x04self\x05\x05\
-value\x07\x01\0\x04\0\x1b[method]data-stream.publish\x01\x0c\x03\0\x12test:shm/p\
-ublisher\x05\x02\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\0\x06client\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.236.0\x10wit-bindge\
-n-rust\x060.43.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1098] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x07\x01A\x02\x01\
+A\x06\x01B\x1f\x04\0\x07address\x03\x01\x01y\x04\0\x05bytes\x03\0\x01\x01r\x02\x05\
+start\x02\x03end\x02\x04\0\x12initialized-region\x03\0\x03\x01i\0\x01r\x02\x04ad\
+dr\x05\x04size\x02\x04\0\x0bmemory-area\x03\0\x06\x01n\x02\x05write\x06shared\x04\
+\0\x0eattach-options\x03\0\x08\x01m\x04\x0ano-storage\x04busy\x0awrong-size\x08i\
+nternal\x04\0\x05error\x03\0\x0a\x04\0\x06memory\x03\x01\x01i\x0c\x01@\x01\x04si\
+ze\x02\0\x0d\x04\0\x13[constructor]memory\x01\x0e\x01h\x0c\x01@\x01\x04self\x0f\0\
+\x0d\x04\0\x14[method]memory.clone\x01\x10\x01j\x01\x07\x01\x0b\x01@\x02\x04self\
+\x0f\x03opt\x09\0\x11\x04\0\x15[method]memory.attach\x01\x12\x01@\x02\x04self\x0f\
+\x08consumed\x02\x01\0\x04\0\x15[method]memory.detach\x01\x13\x01@\x01\x04self\x0f\
+\0\x02\x04\0\x1b[method]memory.minimum-size\x01\x14\x01j\0\x01\x0b\x01@\x02\x04s\
+elf\x0f\x06buffer\x07\0\x15\x04\0\x1a[method]memory.add-storage\x01\x16\x01@\x01\
+\x06buffer\x07\0\x0d\x04\0\x1b[static]memory.create-local\x01\x17\x03\0\x11test:\
+shm/exchange\x05\0\x02\x03\0\0\x06memory\x02\x03\0\0\x05bytes\x01B\x19\x02\x03\x02\
+\x01\x01\x04\0\x06memory\x03\0\0\x02\x03\x02\x01\x02\x04\0\x05bytes\x03\0\x02\x04\
+\0\x0asubscriber\x03\x01\x04\0\x09publisher\x03\x01\x01h\x04\x01i\x01\x01f\x01\x07\
+\x01@\x01\x04self\x06\0\x08\x04\0\x1d[method]subscriber.get-stream\x01\x09\x01i\x04\
+\x01@\x01\x08original\x06\0\x0a\x04\0\x18[static]subscriber.clone\x01\x0b\x01i\x05\
+\x01@\x02\x08elementsy\x0celement-size\x03\0\x0c\x04\0\x16[constructor]publisher\
+\x01\x0d\x01h\x05\x01@\x01\x04self\x0e\0\x0a\x04\0\x1d[method]publisher.subscrib\
+ers\x01\x0f\x01o\x02\x07\x03\x01@\x01\x04self\x0e\0\x10\x04\0\x1a[method]publish\
+er.allocate\x01\x11\x01@\x02\x04self\x0e\x05value\x07\x01\0\x04\0\x19[method]pub\
+lisher.publish\x01\x12\x03\0\x10test:shm/pub-sub\x05\x03\x04\0\x0ftest:shm/clien\
+t\x04\0\x0b\x0c\x01\0\x06client\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
+wit-component\x070.236.0\x10wit-bindgen-rust\x060.43.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

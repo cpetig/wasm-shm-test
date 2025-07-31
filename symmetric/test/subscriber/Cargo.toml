@@ -10,3 +10,4 @@ wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-
 symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor", features = ["trace"] }
 symmetric_stream = { path = "../../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", features = ["trace"] }
 wasi-clocks-symmetric = { version = "0.1.0", path = "../../wasi-clocks" }
+futures = "0.3.31"

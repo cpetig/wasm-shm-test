@@ -1,4 +1,4 @@
-use wasm_shm::{Address, AttachOptions, DataStream};
+use wasm_shm::{Address, AttachOptions, Publisher};
 
 // this is just a placeholder, imagine it becoming more complex with in buffer string and list storage
 fn lower(src: u32, dest: Address) {
@@ -17,23 +17,23 @@ mod easy_way_out {
 use easy_way_out::wait_for;
 use wit_bindgen::rt;
 
-pub fn start() -> wasm_shm::DataStream {
-    let publisher = wasm_shm::DataStream::new(5, 256);
-    let writer = DataStream::clone(&publisher);
+pub fn start() -> wasm_shm::Subscriber {
+    let publisher = wasm_shm::Publisher::new(5, 256);
+    let subscriber = publisher.subscribers();
     rt::async_support::spawn(async move {
         for i in 1..21 {
             wait_for(1_000_000_000).await;
             // this could be hidden in bindgen code in some future
-            let (buffer, _is_init) = writer.allocate();
+            let (buffer, _is_init) = publisher.allocate();
             if let Ok(wasm_shm::MemoryArea { addr, size }) =
                 buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)
             {
                 assert!(size as usize >= std::mem::size_of::<u32>());
                 lower(i, addr);
                 buffer.detach(std::mem::size_of::<u32>() as u32);
-                writer.publish(buffer);
+                publisher.publish(buffer);
             }
         }
     });
-    publisher
+    subscriber
 }
