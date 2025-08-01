@@ -5,9 +5,14 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3.31"
-symmetric_executor = { version = "0.1.0", path = "../../wit-bindgen/crates/symmetric_executor" }
-symmetric_stream = { version = "0.1.0", path = "../../wit-bindgen/crates/symmetric_executor/symmetric_stream" }
-wit-bindgen = { path = "../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }
+symmetric_executor = { path = "../../wit-bindgen/crates/symmetric_executor", optional = true }
+symmetric_stream = { path = "../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional = true }
+wit-bindgen = { path = "../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default_features = false, features = [ "async" ] }
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = [ "cdylib" ]
+
+[features]
+default = [ "symmetric" ]
+symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "wit-bindgen/symmetric" ]
+canonical = [ "wit-bindgen/canonical" ]

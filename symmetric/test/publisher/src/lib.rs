@@ -9,7 +9,7 @@ fn lower(src: u32, dest: Address) {
 // this could be hidden in bindgen code in some future
 fn write_to_buffer(value: u32, buffer: &mut wasm_shm::Memory) -> Result<(), wasm_shm::Error> {
     let wasm_shm::MemoryArea { addr, size } =
-    buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)?;
+        buffer.attach(AttachOptions::WRITE | AttachOptions::SHARED)?;
     assert!(size as usize >= std::mem::size_of::<u32>());
     lower(value, addr);
     buffer.detach(std::mem::size_of::<u32>() as u32);

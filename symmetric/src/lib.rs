@@ -1,12 +1,20 @@
+#[cfg(feature = "symmetric")]
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl",
     debug: true,
     symmetric: true,
 });
+#[cfg(feature = "canonical")]
+wit_bindgen::generate!({
+    path: "../wit/shm.wit",
+    world: "impl2",
+    debug: true,
+});
 
 struct SharedImpl;
 
+#[cfg(feature = "symmetric")]
 struct MyMemory {
     address: *mut u8,
     capacity: u32,
@@ -38,10 +46,15 @@ use std::{
     },
 };
 
-use exports::test::shm::exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
-use exports::test::shm::{exchange, pub_sub};
+use exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
+#[cfg(feature = "symmetric")]
+use exports::test::shm::exchange;
+use exports::test::shm::pub_sub;
+#[cfg(feature = "canonical")]
+use test::shm::exchange;
 use wit_bindgen::{rt::async_support, StreamWriter};
 
+#[cfg(feature = "symmetric")]
 impl exchange::Guest for SharedImpl {
     type Memory = Arc<MyMemory>;
     type Address = Dummy;
@@ -52,8 +65,10 @@ impl pub_sub::Guest for SharedImpl {
     type Subscriber = Arc<MyPublisher>;
 }
 
+#[cfg(feature = "symmetric")]
 impl exchange::GuestAddress for Dummy {}
 
+#[cfg(feature = "symmetric")]
 impl exchange::GuestMemory for Arc<MyMemory> {
     fn new(size: u32) -> Self {
         Self::new(MyMemory {
@@ -171,8 +186,27 @@ impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
     }
 }
 
+#[cfg(feature = "symmetric")]
+type MemoryType = Arc<MyMemory>;
+#[cfg(feature = "symmetric")]
+type HandleType = usize;
+
+#[cfg(feature = "canonical")]
+type MemoryType = exchange::Memory;
+#[cfg(feature = "canonical")]
+type HandleType = u32;
+
+fn mem_clone(obj: &Memory) -> Memory {
+    #[cfg(feature = "symmetric")]
+    let res = Memory::new(MemoryType::clone(obj.get::<Arc<MyMemory>>()));
+    #[cfg(feature = "canonical")]
+    let res = MemoryType::clone(obj);
+    res
+}
+
 impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     fn new(elements: u32, element_size: u32) -> Self {
+        #[cfg(feature = "symmetric")]
         use exchange::GuestMemory;
         let mut mem = Vec::new();
         let alignment = if element_size < 2 || element_size & 1 != 0 {
@@ -190,8 +224,8 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
                     Layout::from_size_align(element_size as usize, alignment).unwrap(),
                 )
             };
-            mem.push(Arc::<MyMemory>::create_local(MemoryArea {
-                addr: unsafe { Address::from_handle(area as usize) },
+            mem.push(MemoryType::create_local(MemoryArea {
+                addr: unsafe { Address::from_handle(area as HandleType) },
                 size: element_size,
             }));
         }
@@ -204,18 +238,14 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     }
     fn allocate(&self) -> (Memory, u32) {
         let buf = self.pool.lock().unwrap().pop_front().unwrap();
-        self.pool
-            .lock()
-            .unwrap()
-            .push_back(Memory::new(Arc::<MyMemory>::clone(buf.get())));
+        self.pool.lock().unwrap().push_back(mem_clone(&buf));
         (buf, 0)
     }
     fn publish(&self, value: Memory) {
         use futures::Future;
         for i in self.subscribers.lock().unwrap().iter_mut() {
-            let mut fut = i
-                .write(vec![Memory::new(Arc::<MyMemory>::clone(value.get()))])
-                .into_future();
+            let new_buffer = mem_clone(&value);
+            let mut fut = i.write(vec![new_buffer]).into_future();
             let waker = futures::task::Waker::noop();
             let mut ctx = futures::task::Context::from_waker(&waker);
             let mut pinned = std::pin::pin!(&mut fut);

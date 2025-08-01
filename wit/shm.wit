@@ -95,6 +95,7 @@ world impl1 {
 }
 
 world impl2 {
+    import exchange;
     export pub-sub;
 }
 

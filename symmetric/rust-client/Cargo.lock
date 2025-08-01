@@ -186,16 +186,9 @@ name = "mini-bindgen"
 version = "0.1.0"
 dependencies = [
  "dummy-rt",
- "wit-bindgen",
  "wit-bindgen-rust-macro",
  "wit-bindgen-symmetric-rt",
 ]
-
-[[package]]
-name = "once_cell"
-version = "1.21.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "pin-project-lite"
@@ -340,8 +333,8 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "wasm-encoder"
-version = "0.235.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#01714cbaf85b5549c737eb41251d6cf3f2f5550f"
+version = "0.236.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#557d8183233d2911a5dda0f114b444aebf0a4a72"
 dependencies = [
  "leb128fmt",
  "wasmparser",
@@ -349,8 +342,8 @@ dependencies = [
 
 [[package]]
 name = "wasm-metadata"
-version = "0.235.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#01714cbaf85b5549c737eb41251d6cf3f2f5550f"
+version = "0.236.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#557d8183233d2911a5dda0f114b444aebf0a4a72"
 dependencies = [
  "anyhow",
  "indexmap",
@@ -359,22 +352,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-shm"
+version = "0.1.0"
+dependencies = [
+ "mini-bindgen",
+ "symmetric-sharedmem",
+]
+
+[[package]]
 name = "wasmparser"
-version = "0.235.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#01714cbaf85b5549c737eb41251d6cf3f2f5550f"
+version = "0.236.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#557d8183233d2911a5dda0f114b444aebf0a4a72"
 dependencies = [
  "bitflags",
  "hashbrown",
  "indexmap",
  "semver",
-]
-
-[[package]]
-name = "wit-bindgen"
-version = "0.43.0"
-dependencies = [
- "wit-bindgen-rt",
- "wit-bindgen-rust-macro",
 ]
 
 [[package]]
@@ -384,15 +377,6 @@ dependencies = [
  "anyhow",
  "heck",
  "wit-parser",
-]
-
-[[package]]
-name = "wit-bindgen-rt"
-version = "0.43.0"
-dependencies = [
- "bitflags",
- "futures",
- "once_cell",
 ]
 
 [[package]]
@@ -433,8 +417,8 @@ dependencies = [
 
 [[package]]
 name = "wit-component"
-version = "0.235.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#01714cbaf85b5549c737eb41251d6cf3f2f5550f"
+version = "0.236.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#557d8183233d2911a5dda0f114b444aebf0a4a72"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -451,8 +435,8 @@ dependencies = [
 
 [[package]]
 name = "wit-parser"
-version = "0.235.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#01714cbaf85b5549c737eb41251d6cf3f2f5550f"
+version = "0.236.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#557d8183233d2911a5dda0f114b444aebf0a4a72"
 dependencies = [
  "anyhow",
  "id-arena",
