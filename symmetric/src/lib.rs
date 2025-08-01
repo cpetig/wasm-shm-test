@@ -245,10 +245,10 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
         use futures::Future;
         for i in self.subscribers.lock().unwrap().iter_mut() {
             let new_buffer = mem_clone(&value);
-            let mut fut = i.write(vec![new_buffer]).into_future();
+            let fut = i.write(vec![new_buffer]).into_future();
             let waker = futures::task::Waker::noop();
             let mut ctx = futures::task::Context::from_waker(&waker);
-            let mut pinned = std::pin::pin!(&mut fut);
+            let mut pinned = std::pin::pin!(fut);
             match pinned.as_mut().poll(&mut ctx) {
                 std::task::Poll::Ready(_) => {}
                 std::task::Poll::Pending => (),

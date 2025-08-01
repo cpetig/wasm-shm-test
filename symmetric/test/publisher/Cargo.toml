@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor" }
-wasi-clocks = { path = "../../wasi-clocks/import" }
-wasm-shm = { path = "../../rust-client" }
-wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }
+symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor", optional=true }
+wasi-clocks = { path = "../../wasi-clocks/import", default-features = false }
+wasm-shm = { path = "../../rust-client", default-features = false }
+wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+
+[features]
+default = [ "symmetric" ]
+symmetric = [ "dep:symmetric_executor", "wit-bindgen/symmetric", "wasm-shm/symmetric", "wasi-clocks/symmetric" ]
+canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical", "wasi-clocks/canonical" ]

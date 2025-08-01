@@ -186,9 +186,16 @@ name = "mini-bindgen"
 version = "0.1.0"
 dependencies = [
  "dummy-rt",
+ "wit-bindgen",
  "wit-bindgen-rust-macro",
  "wit-bindgen-symmetric-rt",
 ]
+
+[[package]]
+name = "once_cell"
+version = "1.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "pin-project-lite"
@@ -410,12 +417,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "wit-bindgen"
+version = "0.43.0"
+dependencies = [
+ "wit-bindgen-rt",
+ "wit-bindgen-rust-macro",
+]
+
+[[package]]
 name = "wit-bindgen-core"
 version = "0.43.0"
 dependencies = [
  "anyhow",
  "heck",
  "wit-parser",
+]
+
+[[package]]
+name = "wit-bindgen-rt"
+version = "0.43.0"
+dependencies = [
+ "bitflags",
+ "futures",
+ "once_cell",
 ]
 
 [[package]]

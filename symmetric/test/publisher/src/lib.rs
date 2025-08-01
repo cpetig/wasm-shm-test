@@ -17,6 +17,7 @@ fn write_to_buffer(value: u32, buffer: &mut wasm_shm::Memory) -> Result<(), wasm
 }
 
 // a simple replacement for wasi::clocks::monotonic_clock::wait_for (no async)
+#[cfg(feature = "symmetric")]
 mod easy_way_out {
     use wit_bindgen::rt;
 
@@ -26,7 +27,10 @@ mod easy_way_out {
     }
 }
 
+#[cfg(feature = "symmetric")]
 use easy_way_out::wait_for;
+#[cfg(feature = "canonical")]
+use wasi_clocks::monotonic_clock::wait_for;
 use wit_bindgen::rt;
 
 pub fn start() -> wasm_shm::Subscriber {

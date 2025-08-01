@@ -4,10 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-publisher = { path = "../publisher" }
-wasm-shm = { path = "../../rust-client" }
-wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }
-symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor" }
-symmetric_stream = { path = "../../../../wit-bindgen/crates/symmetric_executor/symmetric_stream" }
-wasi-clocks-symmetric = { path = "../../wasi-clocks" }
+publisher = { path = "../publisher", default-features = false }
+wasm-shm = { path = "../../rust-client", default-features = false }
+wit-bindgen = { path = "../../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+symmetric_executor = { path = "../../../../wit-bindgen/crates/symmetric_executor", optional=true }
+symmetric_stream = { path = "../../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
+wasi-clocks-symmetric = { path = "../../wasi-clocks", optional=true }
 futures = "0.3.31"
+
+[features]
+default = [ "symmetric" ]
+symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric", "publisher/symmetric" ]
+canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical", "publisher/canonical" ]

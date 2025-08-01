@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-symmetric-sharedmem = { version = "0.1.0", path = ".." }
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen" }
+symmetric-sharedmem = { version = "0.1.0", path = "..", optional = true }
+wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features=false, features=["async"] }
+
+[features]
+default = [ "symmetric" ]
+symmetric = [ "wit-bindgen/symmetric", "dep:symmetric-sharedmem" ]
+canonical = [ "wit-bindgen/canonical" ]
