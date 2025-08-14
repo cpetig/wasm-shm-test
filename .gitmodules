@@ -1,3 +1,7 @@
 [submodule "symmetric/wasi-clocks/wasi-clocks"]
 	path = symmetric/wasi-clocks/wasi-clocks
 	url = https://github.com/WebAssembly/wasi-clocks.git
+[submodule "wit-bindgen"]
+	path = wit-bindgen
+	url = https://github.com/cpetig/wit-bindgen.git
+	branch = work-in-progress
