@@ -36,6 +36,7 @@ struct Dummy;
 
 export!(SharedImpl);
 
+#[cfg(feature = "symmetric")]
 use std::{
     alloc::Layout,
     collections::VecDeque,
@@ -46,13 +47,13 @@ use std::{
     },
 };
 
-use exchange::{Address, AttachOptions, Error, Memory, MemoryArea};
+use exchange::{Address, AttachOptions, Bytes, Error, Memory, MemoryArea};
 #[cfg(feature = "symmetric")]
 use exports::test::shm::exchange;
 use exports::test::shm::pub_sub;
 #[cfg(feature = "canonical")]
 use test::shm::exchange;
-use wit_bindgen::{rt::async_support, StreamWriter};
+use wit_bindgen::StreamWriter;
 
 #[cfg(feature = "symmetric")]
 impl exchange::Guest for SharedImpl {
@@ -70,7 +71,7 @@ impl exchange::GuestAddress for Dummy {}
 
 #[cfg(feature = "symmetric")]
 impl exchange::GuestMemory for Arc<MyMemory> {
-    fn new(size: u32) -> Self {
+    fn new(size: Bytes) -> Self {
         Self::new(MyMemory {
             address: unsafe {
                 std::alloc::alloc(
@@ -139,7 +140,7 @@ impl exchange::GuestMemory for Arc<MyMemory> {
             })
         }
     }
-    fn detach(&self, consumed: u32) {
+    fn detach(&self, consumed: Bytes) {
         let write = self.write.load(Ordering::Acquire);
         let count = self.attach_count.fetch_sub(1, Ordering::Relaxed);
         if write {
@@ -152,10 +153,13 @@ impl exchange::GuestMemory for Arc<MyMemory> {
             }
         }
     }
-    fn minimum_size(&self) -> u32 {
+    fn minimum_size() -> Bytes {
         0
     }
-    fn add_storage(&self, _buffer: MemoryArea) -> Result<(), Error> {
+    fn optimum_size(_count: u32, _size: Bytes) -> Bytes {
+        0
+    }
+    fn add_storage(_buffer: MemoryArea) -> Result<(), Error> {
         todo!()
     }
     fn create_local(buffer: MemoryArea) -> Memory {

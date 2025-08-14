@@ -1,4 +1,4 @@
-use wasm_shm::{Address, AttachOptions, Publisher};
+use wasm_shm::{Address, AttachOptions};
 
 // this is just a placeholder, imagine it becoming more complex with in buffer string and list storage
 fn lower(src: u32, dest: Address) {
@@ -34,6 +34,20 @@ use wasi_clocks::monotonic_clock::wait_for;
 use wit_bindgen::rt;
 
 pub fn start() -> wasm_shm::Subscriber {
+    let memsize = wasm_shm::Memory::optimum_size(5, 256);
+    let alloc = if memsize > 0 {
+        let area = unsafe {
+            std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
+        };
+        wasm_shm::Memory::add_storage(wasm_shm::MemoryArea {
+            addr: unsafe { Address::from_handle(area as usize) },
+            size: memsize,
+        })
+        .unwrap();
+        Some(area)
+    } else {
+        None
+    };
     let publisher = wasm_shm::Publisher::new(5, 256);
     let subscriber = publisher.subscribers();
     rt::async_support::spawn(async move {

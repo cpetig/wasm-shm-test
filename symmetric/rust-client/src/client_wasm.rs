@@ -321,21 +321,44 @@ pub mod test {
                 /// pre-allocate position inside linear memory:
                 /// get recommended allocation size
                 #[allow(async_fn_in_trait)]
-                pub fn minimum_size(&self) -> Bytes {
+                pub fn minimum_size() -> Bytes {
                     unsafe {
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.minimum-size"
+                                link_name = "[static]memory.minimum-size"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eminimum_size(
+                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eminimum_size() -> i32;
+                        }
+                        let ret = testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eminimum_size();
+                        ret as u32
+                    }
+                }
+            }
+            impl Memory {
+                #[allow(unused_unsafe, clippy::all)]
+                /// pre-allocate position inside linear memory:
+                /// get recommended allocation size for a set of buffers
+                #[allow(async_fn_in_trait)]
+                pub fn optimum_size(count: u32, size: Bytes) -> Bytes {
+                    unsafe {
+                        #[link(wasm_import_module = "test:shm/exchange")]
+                        unsafe extern "C" {
+                            #[allow(non_snake_case)]
+                            #[cfg_attr(
+                                target_arch = "wasm32",
+                                link_name = "[static]memory.optimum-size"
+                            )]
+                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eoptimum_size(
+                                _: i32,
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eminimum_size(
-                            (self).handle() as i32,
+                        let ret = testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eoptimum_size(
+                            _rt::as_i32(&count),
+                            _rt::as_i32(size),
                         );
                         ret as u32
                     }
@@ -347,7 +370,7 @@ pub mod test {
                 /// this function provides a pre-allocated area,
                 /// the area should be at least "minimum-size" big
                 #[allow(async_fn_in_trait)]
-                pub fn add_storage(&self, buffer: MemoryArea) -> Result<(), Error> {
+                pub fn add_storage(buffer: MemoryArea) -> Result<(), Error> {
                     unsafe {
                         #[repr(align(1))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
@@ -361,17 +384,15 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.add-storage"
+                                link_name = "[static]memory.add-storage"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eadd_storage(
-                                _: i32,
+                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eadd_storage(
                                 _: i32,
                                 _: i32,
                                 _: *mut u8,
                             );
                         }
-                        testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eadd_storage(
-                            (self).handle() as i32,
+                        testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eadd_storage(
                             (addr0).take_handle() as i32,
                             _rt::as_i32(size0),
                             ptr1,
@@ -932,32 +953,33 @@ pub mod wit_stream {
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1098] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x07\x01A\x02\x01\
-A\x06\x01B\x1f\x04\0\x07address\x03\x01\x01y\x04\0\x05bytes\x03\0\x01\x01r\x02\x05\
-start\x02\x03end\x02\x04\0\x12initialized-region\x03\0\x03\x01i\0\x01r\x02\x04ad\
-dr\x05\x04size\x02\x04\0\x0bmemory-area\x03\0\x06\x01n\x02\x05write\x06shared\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1136] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf3\x07\x01A\x02\x01\
+A\x06\x01B!\x04\0\x07address\x03\x01\x01y\x04\0\x05bytes\x03\0\x01\x01r\x02\x05s\
+tart\x02\x03end\x02\x04\0\x12initialized-region\x03\0\x03\x01i\0\x01r\x02\x04add\
+r\x05\x04size\x02\x04\0\x0bmemory-area\x03\0\x06\x01n\x02\x05write\x06shared\x04\
 \0\x0eattach-options\x03\0\x08\x01m\x04\x0ano-storage\x04busy\x0awrong-size\x08i\
 nternal\x04\0\x05error\x03\0\x0a\x04\0\x06memory\x03\x01\x01i\x0c\x01@\x01\x04si\
 ze\x02\0\x0d\x04\0\x13[constructor]memory\x01\x0e\x01h\x0c\x01@\x01\x04self\x0f\0\
 \x0d\x04\0\x14[method]memory.clone\x01\x10\x01j\x01\x07\x01\x0b\x01@\x02\x04self\
 \x0f\x03opt\x09\0\x11\x04\0\x15[method]memory.attach\x01\x12\x01@\x02\x04self\x0f\
-\x08consumed\x02\x01\0\x04\0\x15[method]memory.detach\x01\x13\x01@\x01\x04self\x0f\
-\0\x02\x04\0\x1b[method]memory.minimum-size\x01\x14\x01j\0\x01\x0b\x01@\x02\x04s\
-elf\x0f\x06buffer\x07\0\x15\x04\0\x1a[method]memory.add-storage\x01\x16\x01@\x01\
-\x06buffer\x07\0\x0d\x04\0\x1b[static]memory.create-local\x01\x17\x03\0\x11test:\
-shm/exchange\x05\0\x02\x03\0\0\x06memory\x02\x03\0\0\x05bytes\x01B\x19\x02\x03\x02\
-\x01\x01\x04\0\x06memory\x03\0\0\x02\x03\x02\x01\x02\x04\0\x05bytes\x03\0\x02\x04\
-\0\x0asubscriber\x03\x01\x04\0\x09publisher\x03\x01\x01h\x04\x01i\x01\x01f\x01\x07\
-\x01@\x01\x04self\x06\0\x08\x04\0\x1d[method]subscriber.get-stream\x01\x09\x01i\x04\
-\x01@\x01\x08original\x06\0\x0a\x04\0\x18[static]subscriber.clone\x01\x0b\x01i\x05\
-\x01@\x02\x08elementsy\x0celement-size\x03\0\x0c\x04\0\x16[constructor]publisher\
-\x01\x0d\x01h\x05\x01@\x01\x04self\x0e\0\x0a\x04\0\x1d[method]publisher.subscrib\
-ers\x01\x0f\x01o\x02\x07\x03\x01@\x01\x04self\x0e\0\x10\x04\0\x1a[method]publish\
-er.allocate\x01\x11\x01@\x02\x04self\x0e\x05value\x07\x01\0\x04\0\x19[method]pub\
-lisher.publish\x01\x12\x03\0\x10test:shm/pub-sub\x05\x03\x04\0\x0ftest:shm/clien\
-t\x04\0\x0b\x0c\x01\0\x06client\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
-wit-component\x070.236.0\x10wit-bindgen-rust\x060.43.0";
+\x08consumed\x02\x01\0\x04\0\x15[method]memory.detach\x01\x13\x01@\0\0\x02\x04\0\
+\x1b[static]memory.minimum-size\x01\x14\x01@\x02\x05county\x04size\x02\0\x02\x04\
+\0\x1b[static]memory.optimum-size\x01\x15\x01j\0\x01\x0b\x01@\x01\x06buffer\x07\0\
+\x16\x04\0\x1a[static]memory.add-storage\x01\x17\x01@\x01\x06buffer\x07\0\x0d\x04\
+\0\x1b[static]memory.create-local\x01\x18\x03\0\x11test:shm/exchange\x05\0\x02\x03\
+\0\0\x06memory\x02\x03\0\0\x05bytes\x01B\x19\x02\x03\x02\x01\x01\x04\0\x06memory\
+\x03\0\0\x02\x03\x02\x01\x02\x04\0\x05bytes\x03\0\x02\x04\0\x0asubscriber\x03\x01\
+\x04\0\x09publisher\x03\x01\x01h\x04\x01i\x01\x01f\x01\x07\x01@\x01\x04self\x06\0\
+\x08\x04\0\x1d[method]subscriber.get-stream\x01\x09\x01i\x04\x01@\x01\x08origina\
+l\x06\0\x0a\x04\0\x18[static]subscriber.clone\x01\x0b\x01i\x05\x01@\x02\x08eleme\
+ntsy\x0celement-size\x03\0\x0c\x04\0\x16[constructor]publisher\x01\x0d\x01h\x05\x01\
+@\x01\x04self\x0e\0\x0a\x04\0\x1d[method]publisher.subscribers\x01\x0f\x01o\x02\x07\
+\x03\x01@\x01\x04self\x0e\0\x10\x04\0\x1a[method]publisher.allocate\x01\x11\x01@\
+\x02\x04self\x0e\x05value\x07\x01\0\x04\0\x19[method]publisher.publish\x01\x12\x03\
+\0\x10test:shm/pub-sub\x05\x03\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\0\x06c\
+lient\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.236.\
+0\x10wit-bindgen-rust\x060.43.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
