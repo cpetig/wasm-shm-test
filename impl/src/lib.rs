@@ -1,7 +1,7 @@
 use std::sync::atomic::AtomicPtr;
 
 use exports::test::shm::image::Guest;
-use test::shm::exchange::{AttachOptions, Memory, MemoryArea};
+use test::shm::exchange::{Address, AttachOptions, Memory, MemoryArea};
 
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
@@ -17,21 +17,22 @@ impl Guest for MyGuest {
         let mut addr = BUFFER.load(std::sync::atomic::Ordering::Acquire);
         if addr.is_null() {
             let layout =
-                std::alloc::Layout::from_size_align(buffer.minimum_size() as usize, 1).unwrap();
+                std::alloc::Layout::from_size_align(Memory::optimum_size(1, 1024) as usize, 1)
+                    .unwrap();
             if layout.size() > 0 {
                 addr = unsafe { std::alloc::alloc(layout) };
                 BUFFER.store(addr, std::sync::atomic::Ordering::Release);
             }
-            buffer
-                .add_storage(MemoryArea {
-                    addr: addr as usize as u32,
-                    size: layout.size() as u32,
-                })
-                .unwrap();
+            Memory::add_storage(MemoryArea {
+                addr: unsafe { Address::from_handle((addr as usize).try_into().unwrap()) },
+                size: layout.size() as u32,
+            })
+            .unwrap();
         }
+
         let data = buffer.attach(AttachOptions::WRITE).unwrap();
         assert!(where_ < data.size);
-        let addr = data.addr as *mut u8;
+        let addr = data.addr.take_handle() as *mut u8;
         let mem = unsafe { addr.byte_add(where_ as usize) };
         unsafe {
             mem.write(mem.read() + 1);
