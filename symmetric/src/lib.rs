@@ -153,7 +153,7 @@ impl exchange::GuestMemory for Arc<MyMemory> {
             }
         }
     }
-    fn minimum_size() -> Bytes {
+    fn minimum_size(&self) -> Bytes {
         0
     }
     fn optimum_size(_count: u32, _size: Bytes) -> Bytes {
