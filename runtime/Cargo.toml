@@ -6,5 +6,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.93"
 libc = "0.2.166"
-wasmtime = { version = "35.0.0", features = ["component-model-async"] }
-wasmtime-wasi = "35.0.0"
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime.git", features = ["component-model-async"] }
+wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime.git", features = ["p3"] }
+wasmtime-wasi-io = { git = "https://github.com/bytecodealliance/wasmtime.git" }
+#wasmtime = { version = "35.0.0", features = ["component-model-async"] }
+#wasmtime-wasi = "35.0.0"

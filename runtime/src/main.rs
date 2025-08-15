@@ -5,10 +5,10 @@ use wasmtime::{
     Config, Engine, Store,
 };
 use wasmtime_wasi::{
-    self,
-    p2::{bindings::sync::Command, IoView, WasiCtx, WasiCtxBuilder, WasiView},
-    ResourceTable,
+    self, p2::bindings::sync::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView,
+    WasiView,
 };
+use wasmtime_wasi_io::IoView;
 
 wasmtime::component::bindgen!({
     path: "../wit/shm.wit",
@@ -48,8 +48,11 @@ impl Default for HostState {
 }
 
 impl WasiView for HostState {
-    fn ctx(&mut self) -> &mut WasiCtx {
-        &mut self.ctx
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.ctx,
+            table: &mut self.table,
+        }
     }
 }
 
@@ -76,7 +79,8 @@ mod myshm {
         },
         StoreContextMut,
     };
-    use wasmtime_wasi::p2::WasiView;
+    use wasmtime_wasi::WasiView;
+    use wasmtime_wasi_io::IoView;
 
     // Hack: We wrap this type to remember the pointer to the linear memory from the lifting
     struct WrappedMemory {
@@ -124,7 +128,7 @@ mod myshm {
 
     unsafe impl Sync for WrappedMemory {}
 
-    fn new<T: WasiView>(
+    fn new<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (size,): (u32,),
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
@@ -152,7 +156,7 @@ mod myshm {
         Ok(())
     }
 
-    fn attach<T: WasiView>(
+    fn attach<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (
             WrappedMemory {
@@ -201,7 +205,7 @@ mod myshm {
         }
     }
 
-    fn detach<T: WasiView>(
+    fn detach<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (objid, _consumed): (Resource<MyMemory>, u32),
     ) -> wasmtime::Result<()> {
@@ -215,7 +219,7 @@ mod myshm {
         Ok(())
     }
 
-    fn minimum_size<T: WasiView>(
+    fn minimum_size<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (objid,): (Resource<MyMemory>,),
     ) -> wasmtime::Result<(u32,)> {
@@ -233,7 +237,7 @@ mod myshm {
         Ok((count * size + 2 * pagesize,))
     }
 
-    fn add_storage<T: WasiView>(
+    fn add_storage<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (objid, area): (Resource<MyMemory>, MemoryArea),
     ) -> wasmtime::Result<(Result<(), Error>,)> {
@@ -255,10 +259,7 @@ mod myshm {
         todo!()
     }
 
-    fn ignore<T: WasiView>(
-        _ctx: StoreContextMut<'_, T>,
-        _obj: u32,
-    ) -> wasmtime::Result<()> {
+    fn ignore<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
         todo!()
     }
 
@@ -285,7 +286,9 @@ mod myshm {
 
 fn main() -> anyhow::Result<()> {
     let mut config = Config::new();
-    config.wasm_component_model(true);
+    config
+        .wasm_component_model(true)
+        .wasm_component_model_async(true);
 
     let engine = Engine::new(&config)?;
     let mut store = Store::new(&engine, HostState::default());
@@ -296,6 +299,7 @@ fn main() -> anyhow::Result<()> {
     let mut linker = Linker::new(&engine);
     myshm::add_to_linker(&mut linker)?;
     wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
+    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
 
     let command = Command::instantiate(&mut store, &component, &linker)?;
 

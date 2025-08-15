@@ -36,16 +36,15 @@ struct Dummy;
 
 export!(SharedImpl);
 
-#[cfg(feature = "symmetric")]
 use std::{
     alloc::Layout,
     collections::VecDeque,
     future::IntoFuture,
-    sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
 };
+
+#[cfg(feature = "symmetric")]
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use exchange::{Address, AttachOptions, Bytes, Error, Memory, MemoryArea};
 #[cfg(feature = "symmetric")]

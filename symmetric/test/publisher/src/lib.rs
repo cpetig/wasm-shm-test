@@ -40,7 +40,7 @@ pub fn start() -> wasm_shm::Subscriber {
             std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
         };
         wasm_shm::Memory::add_storage(wasm_shm::MemoryArea {
-            addr: unsafe { Address::from_handle(area as usize) },
+            addr: unsafe { Address::from_handle((area as usize).try_into().unwrap()) },
             size: memsize,
         })
         .unwrap();
