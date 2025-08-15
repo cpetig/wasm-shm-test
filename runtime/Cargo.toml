@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.93"
 libc = "0.2.166"
-wasmtime = "35.0.0"
+wasmtime = { version = "35.0.0", features = ["component-model-async"] }
 wasmtime-wasi = "35.0.0"

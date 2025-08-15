@@ -49,10 +49,11 @@ interface exchange {
         detach: func(consumed: bytes);
 
         // pre-allocate position inside linear memory:
-        // get recommended allocation size
-        minimum-size: static func() -> bytes;
+        // get recommended allocation size for this object
+        minimum-size: func() -> bytes;
         // pre-allocate position inside linear memory:
-        // get recommended allocation size for a set of buffers
+        // get recommended allocation size for a set of objects 
+        // (attached in parallel)
         optimum-size: static func(count: u32, size: bytes) -> bytes;
         // buffers need a position in linear memory to attach to, 
         // this function provides a pre-allocated area,

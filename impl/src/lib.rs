@@ -17,7 +17,7 @@ impl Guest for MyGuest {
         let mut addr = BUFFER.load(std::sync::atomic::Ordering::Acquire);
         if addr.is_null() {
             let layout =
-                std::alloc::Layout::from_size_align(Memory::optimum_size(1, 1024) as usize, 1)
+                std::alloc::Layout::from_size_align(buffer.minimum_size() as usize, 1)
                     .unwrap();
             if layout.size() > 0 {
                 addr = unsafe { std::alloc::alloc(layout) };

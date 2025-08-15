@@ -14,6 +14,7 @@ wasmtime::component::bindgen!({
     path: "../wit/shm.wit",
     world: "main",
     include_generated_code_from_file: true,
+    debug: true,
     with: {
         "test:shm/exchange/memory": MyMemory,
     }
@@ -65,7 +66,7 @@ unsafe impl<T> Send for SendMemory<T> {}
 mod myshm {
     use std::ffi::{c_char, c_void};
 
-    use super::test::shm::exchange::{AttachOptions, Error, MemoryArea};
+    use super::test::shm::exchange::{Address, AttachOptions, Error, MemoryArea};
     use super::MyMemory;
     use super::SendMemory;
     use wasmtime::{
@@ -192,7 +193,7 @@ mod myshm {
             obj.attached_addr = addr;
             let linear_addr = unsafe { addr.byte_offset_from(linear.0.cast::<c_void>()) } as u32;
             Ok((Ok(MemoryArea {
-                addr: linear_addr,
+                addr: wasmtime::component::Resource::<Address>::new_own(linear_addr),
                 size: obj.size,
             }),))
         } else {
@@ -224,6 +225,14 @@ mod myshm {
         Ok((obj.size + 2 * pagesize,))
     }
 
+    fn optimum_size<T: WasiView>(
+        _ctx: StoreContextMut<'_, T>,
+        (count, size): (u32, u32),
+    ) -> wasmtime::Result<(u32,)> {
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        Ok((count * size + 2 * pagesize,))
+    }
+
     fn add_storage<T: WasiView>(
         mut ctx: StoreContextMut<'_, T>,
         (objid, area): (Resource<MyMemory>, MemoryArea),
@@ -234,7 +243,7 @@ mod myshm {
         if area.size < obj.size + 2 * pagesize {
             return Ok((Err(Error::WrongSize),));
         }
-        obj.buffer_addr = area.addr;
+        obj.buffer_addr = area.addr.rep();
         obj.buffer_size = area.size;
         Ok((Ok(()),))
     }
@@ -245,6 +254,15 @@ mod myshm {
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
         todo!()
     }
+
+    fn ignore<T: WasiView>(
+        _ctx: StoreContextMut<'_, T>,
+        _obj: u32,
+    ) -> wasmtime::Result<()> {
+        todo!()
+    }
+
+    struct DummyType;
 
     pub(crate) fn add_to_linker<T: WasiView + 'static>(
         l: &mut wasmtime::component::Linker<T>,
@@ -257,8 +275,10 @@ mod myshm {
         shm.func_wrap("[method]memory.attach", attach::<T>)?;
         shm.func_wrap("[method]memory.detach", detach::<T>)?;
         shm.func_wrap("[method]memory.minimum-size", minimum_size::<T>)?;
-        shm.func_wrap("[method]memory.add-storage", add_storage::<T>)?;
+        shm.func_wrap("[static]memory.optimum-size", optimum_size::<T>)?;
+        shm.func_wrap("[static]memory.add-storage", add_storage::<T>)?;
         shm.func_wrap("[static]memory.create-local", create_local::<T>)?;
+        shm.resource("address", ResourceType::host::<DummyType>(), ignore::<T>)?;
         Ok(())
     }
 }
