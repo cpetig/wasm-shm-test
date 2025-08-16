@@ -71,7 +71,7 @@ unsafe impl<T> Send for SendMemory<T> {}
 mod myshm {
     use std::ffi::{c_char, c_void};
 
-    use super::test::shm::exchange::{Address, AttachOptions, Error, MemoryArea};
+    use super::test::shm::exchange::{Address, AttachOptions, Bytes, Error, MemoryArea};
     use super::{MyAddress, MyMemory, SendMemory};
     use wasmtime::{
         component::{
@@ -129,6 +129,101 @@ mod myshm {
 
     unsafe impl Sync for WrappedMemory {}
 
+    struct WrappedAddress {
+        inner: u32,
+        linear: SendMemory<u8>,
+    }
+
+    unsafe impl ComponentType for WrappedAddress {
+        type Lower = <Resource<MyMemory> as ComponentType>::Lower;
+        const ABI: CanonicalAbiInfo = <Resource<MyMemory> as ComponentType>::ABI;
+        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
+            <Resource<MyMemory> as ComponentType>::typecheck(ty, types)
+        }
+    }
+
+    unsafe impl Lift for WrappedAddress {
+        fn linear_lift_from_flat(
+            cx: &mut LiftContext<'_>,
+            _ty: InterfaceType,
+            src: &Self::Lower,
+        ) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            u32::linear_lift_from_flat(cx, InterfaceType::U32, src).map(|a| WrappedAddress {
+                inner: a,
+                linear: SendMemory(linear),
+            })
+        }
+
+        fn linear_lift_from_memory(
+            cx: &mut LiftContext<'_>,
+            _ty: InterfaceType,
+            bytes: &[u8],
+        ) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            u32::linear_lift_from_memory(cx, InterfaceType::U32, bytes).map(|a| WrappedAddress {
+                inner: a,
+                linear: SendMemory(linear),
+            })
+        }
+    }
+
+    unsafe impl Sync for WrappedAddress {}
+
+    struct WrappedArea {
+        addr: u32,
+        size: Bytes,
+        linear: SendMemory<u8>,
+    }
+
+    #[derive(Copy, Clone)]
+    struct AreaLower {
+        addr: wasmtime::ValRaw,
+        size: wasmtime::ValRaw,
+    }
+
+    unsafe impl ComponentType for WrappedArea {
+        type Lower = AreaLower;
+        const ABI: CanonicalAbiInfo = <MemoryArea as ComponentType>::ABI;
+        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
+            <MemoryArea as ComponentType>::typecheck(ty, types)
+        }
+    }
+
+    unsafe impl Lift for WrappedArea {
+        fn linear_lift_from_flat(
+            cx: &mut LiftContext<'_>,
+            _ty: InterfaceType,
+            src: &Self::Lower,
+        ) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            let addr = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.addr)?;
+            let size = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.size)?;
+            Ok(WrappedArea {
+                addr,
+                size,
+                linear: SendMemory(linear),
+            })
+        }
+
+        fn linear_lift_from_memory(
+            cx: &mut LiftContext<'_>,
+            _ty: InterfaceType,
+            bytes: &[u8],
+        ) -> anyhow::Result<Self> {
+            let linear = cx.memory().as_ptr().cast_mut();
+            let addr = u32::linear_lift_from_memory(cx, InterfaceType::U32, &bytes[0..4])?;
+            let size = u32::linear_lift_from_memory(cx, InterfaceType::U32, &bytes[4..8])?;
+            Ok(WrappedArea {
+                addr,
+                size,
+                linear: SendMemory(linear),
+            })
+        }
+    }
+
+    unsafe impl Sync for WrappedArea {}
+
     fn new<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (size,): (u32,),
@@ -160,12 +255,6 @@ mod myshm {
         Ok(())
     }
 
-    // fn attach<T: WasiView + IoView>(
-    //     mut ctx: StoreContextMut<'_, T>,
-    //     (_obj, _opt): (Resource<MyMemory>, AttachOptions),
-    // ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
-    //     todo!()
-    // }
     fn attach<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (
@@ -249,7 +338,7 @@ mod myshm {
 
     fn add_storage<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
-        (area,): (MemoryArea,),
+        (area,): (WrappedArea,),
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
         todo!();
@@ -322,13 +411,13 @@ fn main() -> anyhow::Result<()> {
 
         let instance = linker.instantiate_async(&mut store, &component).await?;
         let command = Command::new(&mut store, &instance)?;
+        // instance
+        //     .run_concurrent(&mut store, async move |store| {
+        //         command.wasi_cli_run().call_run(store).await
+        //     })
         command
             .wasi_cli_run()
             .call_run(&mut store)
-            // instance
-            //     .run_concurrent(&mut store, async move |store| {
-            //         command.wasi_cli_run().call_run(store).await
-            //     })
             .await?
             .map_err(|_e| anyhow::Error::msg("fail?"))?;
         Ok::<(), anyhow::Error>(())
