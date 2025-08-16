@@ -28,8 +28,8 @@ struct MyMemory {
 struct MyPublisher {
     elements: u32,
     element_size: u32,
-    subscribers: Mutex<Vec<StreamWriter<Memory>>>,
-    pool: Mutex<VecDeque<Memory>>,
+    subscribers: Mutex<Vec<StreamWriter<MemoryBlock>>>,
+    pool: Mutex<VecDeque<MemoryBlock>>,
 }
 
 struct Dummy;
@@ -46,7 +46,7 @@ use std::{
 #[cfg(feature = "symmetric")]
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-use exchange::{Address, AttachOptions, Bytes, Error, Memory, MemoryArea};
+use exchange::{Address, AttachOptions, Bytes, Error, MemoryBlock, MemoryArea};
 #[cfg(feature = "symmetric")]
 use exports::test::shm::exchange;
 use exports::test::shm::pub_sub;
@@ -56,7 +56,7 @@ use wit_bindgen::StreamWriter;
 
 #[cfg(feature = "symmetric")]
 impl exchange::Guest for SharedImpl {
-    type Memory = Arc<MyMemory>;
+    type MemoryBlock = Arc<MyMemory>;
     type Address = Dummy;
 }
 
@@ -69,7 +69,7 @@ impl pub_sub::Guest for SharedImpl {
 impl exchange::GuestAddress for Dummy {}
 
 #[cfg(feature = "symmetric")]
-impl exchange::GuestMemory for Arc<MyMemory> {
+impl exchange::GuestMemoryBlock for Arc<MyMemory> {
     fn new(size: Bytes) -> Self {
         Self::new(MyMemory {
             address: unsafe {
@@ -161,8 +161,8 @@ impl exchange::GuestMemory for Arc<MyMemory> {
     fn add_storage(_buffer: MemoryArea) -> Result<(), Error> {
         todo!()
     }
-    fn create_local(buffer: MemoryArea) -> Memory {
-        Memory::new(Arc::new(MyMemory {
+    fn create_local(buffer: MemoryArea) -> MemoryBlock {
+        MemoryBlock::new(Arc::new(MyMemory {
             address: buffer.addr.take_handle() as *mut u8,
             capacity: buffer.size,
             written: AtomicU32::new(0),
@@ -172,14 +172,14 @@ impl exchange::GuestMemory for Arc<MyMemory> {
             shared: AtomicBool::new(false),
         }))
     }
-    fn clone(&self) -> Memory {
-        Memory::new(Clone::clone(self))
+    fn clone(&self) -> MemoryBlock {
+        MemoryBlock::new(Clone::clone(self))
     }
 }
 
 impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
-    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
-        let s = wit_stream::new::<Memory>();
+    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
+        let s = wit_stream::new::<MemoryBlock>();
         self.subscribers.lock().unwrap().push(s.0);
         s.1
     }
@@ -195,13 +195,13 @@ type MemoryType = Arc<MyMemory>;
 type HandleType = usize;
 
 #[cfg(feature = "canonical")]
-type MemoryType = exchange::Memory;
+type MemoryType = exchange::MemoryBlock;
 #[cfg(feature = "canonical")]
 type HandleType = u32;
 
-fn mem_clone(obj: &Memory) -> Memory {
+fn mem_clone(obj: &MemoryBlock) -> MemoryBlock {
     #[cfg(feature = "symmetric")]
-    let res = Memory::new(MemoryType::clone(obj.get::<Arc<MyMemory>>()));
+    let res = MemoryBlock::new(MemoryType::clone(obj.get::<Arc<MyMemory>>()));
     #[cfg(feature = "canonical")]
     let res = MemoryType::clone(obj);
     res
@@ -210,7 +210,7 @@ fn mem_clone(obj: &Memory) -> Memory {
 impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     fn new(elements: u32, element_size: u32) -> Self {
         #[cfg(feature = "symmetric")]
-        use exchange::GuestMemory;
+        use exchange::GuestMemoryBlock;
         let mut mem = Vec::new();
         let alignment = if element_size < 2 || element_size & 1 != 0 {
             1
@@ -239,12 +239,12 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
             pool: Mutex::new(VecDeque::from(mem)),
         })
     }
-    fn allocate(&self) -> (Memory, u32) {
+    fn allocate(&self) -> (MemoryBlock, u32) {
         let buf = self.pool.lock().unwrap().pop_front().unwrap();
         self.pool.lock().unwrap().push_back(mem_clone(&buf));
         (buf, 0)
     }
-    fn publish(&self, value: Memory) {
+    fn publish(&self, value: MemoryBlock) {
         use futures::Future;
         for i in self.subscribers.lock().unwrap().iter_mut() {
             let new_buffer = mem_clone(&value);

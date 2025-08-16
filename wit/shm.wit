@@ -33,12 +33,12 @@ interface exchange {
         // somehow the host decided that it isn't possible to mmap
         internal,
     }
-    resource memory {
+    resource memory-block {
         // construct a memory buffer by size
         constructor(size: bytes);
 
         // only useful for shared buffers
-        clone: func() -> memory;
+        clone: func() -> memory-block;
         
         // all non-static member functions implicitely borrow a 
         // memory object as the first argument
@@ -61,17 +61,17 @@ interface exchange {
         add-storage: static func(buffer: memory-area) -> result<_, error>;
 
         // optional: create a buffer local to this linear memory
-        create-local: static func(buffer: memory-area) -> memory;
+        create-local: static func(buffer: memory-area) -> memory-block;
 
         // the CM implicitely creates a destructor called "drop"
     }
 }
 
 interface pub-sub {
-    use exchange.{memory, bytes};
+    use exchange.{memory-block, bytes};
     resource subscriber {
         /// subscribers receive memory handles
-        get-stream: func() -> stream<memory>;
+        get-stream: func() -> stream<memory-block>;
         /// clone
         clone: static func(original: borrow<subscriber>) -> subscriber;
     }
@@ -83,9 +83,9 @@ interface pub-sub {
         subscribers: func() -> subscriber;
         /// returns a memory buffer and number of already initialized bytes 
         /// (from last write)
-        allocate: func() -> tuple<memory, bytes>;
+        allocate: func() -> tuple<memory-block, bytes>;
         /// send data to clients
-        publish: func(value: memory);
+        publish: func(value: memory-block);
     }
 }
 
@@ -109,8 +109,8 @@ world client {
 }
 
 interface image {
-    use exchange.{memory};
-    increment: func(buffer: borrow<memory>, where: u32);
+    use exchange.{memory-block};
+    increment: func(buffer: borrow<memory-block>, where: u32);
 }
 
 world plugin {

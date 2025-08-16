@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wit-bindgen = { version = "0.43.0", path = "../wit-bindgen/crates/guest-rust" }
+wit-bindgen = { path = "../wit-bindgen/crates/guest-rust" }
 
 [lib]
 crate-type = ["cdylib"]

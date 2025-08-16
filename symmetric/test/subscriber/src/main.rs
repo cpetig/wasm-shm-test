@@ -4,7 +4,7 @@ fn lift(src: wasm_shm::Address) -> u32 {
     *unsafe { &*((src.take_handle() as *const u8).cast::<u32>()) }
 }
 
-fn read_value(buf: wasm_shm::Memory) -> u32 {
+fn read_value(buf: wasm_shm::MemoryBlock) -> u32 {
     if let Ok(wasm_shm::MemoryArea { addr, size }) = buf.attach(AttachOptions::SHARED) {
         assert!(size as usize >= std::mem::size_of::<u32>());
         let value = lift(addr);

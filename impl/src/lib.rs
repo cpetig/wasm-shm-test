@@ -1,7 +1,7 @@
 use std::sync::atomic::AtomicPtr;
 
 use exports::test::shm::image::Guest;
-use test::shm::exchange::{Address, AttachOptions, Memory, MemoryArea};
+use test::shm::exchange::{Address, AttachOptions, MemoryBlock, MemoryArea};
 
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
@@ -13,7 +13,7 @@ struct MyGuest;
 static BUFFER: AtomicPtr<u8> = AtomicPtr::new(std::ptr::null_mut());
 
 impl Guest for MyGuest {
-    fn increment(buffer: &Memory, where_: u32) {
+    fn increment(buffer: &MemoryBlock, where_: u32) {
         let mut addr = BUFFER.load(std::sync::atomic::Ordering::Acquire);
         if addr.is_null() {
             let layout =
@@ -23,7 +23,7 @@ impl Guest for MyGuest {
                 addr = unsafe { std::alloc::alloc(layout) };
                 BUFFER.store(addr, std::sync::atomic::Ordering::Release);
             }
-            Memory::add_storage(MemoryArea {
+            MemoryBlock::add_storage(MemoryArea {
                 addr: unsafe { Address::from_handle((addr as usize).try_into().unwrap()) },
                 size: layout.size() as u32,
             })

@@ -148,10 +148,10 @@ pub mod test {
             }
             #[derive(Debug)]
             #[repr(transparent)]
-            pub struct Memory {
-                handle: _rt::Resource<Memory>,
+            pub struct MemoryBlock {
+                handle: _rt::Resource<MemoryBlock>,
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -167,7 +167,7 @@ pub mod test {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for Memory {
+            unsafe impl _rt::WasmResource for MemoryBlock {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[link(wasm_import_module = "test:shm/exchange")]
@@ -175,16 +175,20 @@ pub mod test {
                         #[allow(non_snake_case)]
                         #[cfg_attr(
                             target_arch = "wasm32",
-                            link_name = "[resource-drop]memory"
+                            link_name = "[resource-drop]memory-block"
                         )]
-                        fn testX3AshmX2FexchangeX00X5Bresource_dropX5Dmemory(_: i32);
+                        fn testX3AshmX2FexchangeX00X5Bresource_dropX5Dmemory_block(
+                            _: i32,
+                        );
                     }
                     unsafe {
-                        testX3AshmX2FexchangeX00X5Bresource_dropX5Dmemory(_handle as i32)
+                        testX3AshmX2FexchangeX00X5Bresource_dropX5Dmemory_block(
+                            _handle as i32,
+                        )
                     };
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// construct a memory buffer by size
                 #[allow(async_fn_in_trait)]
@@ -195,44 +199,44 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[constructor]memory"
+                                link_name = "[constructor]memory-block"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BconstructorX5Dmemory(
+                            fn testX3AshmX2FexchangeX00X5BconstructorX5Dmemory_block(
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BconstructorX5Dmemory(
+                        let ret = testX3AshmX2FexchangeX00X5BconstructorX5Dmemory_block(
                             _rt::as_i32(size),
                         );
-                        Memory::from_handle(ret as u32)
+                        MemoryBlock::from_handle(ret as u32)
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// only useful for shared buffers
                 #[allow(async_fn_in_trait)]
-                pub fn clone(&self) -> Memory {
+                pub fn clone(&self) -> MemoryBlock {
                     unsafe {
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.clone"
+                                link_name = "[method]memory-block.clone"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eclone(
+                            fn testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eclone(
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eclone(
+                        let ret = testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eclone(
                             (self).handle() as i32,
                         );
-                        Memory::from_handle(ret as u32)
+                        MemoryBlock::from_handle(ret as u32)
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// all non-static member functions implicitely borrow a
                 /// memory object as the first argument
@@ -252,15 +256,15 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.attach"
+                                link_name = "[method]memory-block.attach"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eattach(
+                            fn testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eattach(
                                 _: i32,
                                 _: i32,
                                 _: *mut u8,
                             );
                         }
-                        testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eattach(
+                        testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eattach(
                             (self).handle() as i32,
                             (flags0.bits() >> 0) as i32,
                             ptr1,
@@ -291,7 +295,7 @@ pub mod test {
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// detach buffer, consumed bytes have been written/read
                 #[allow(async_fn_in_trait)]
@@ -302,21 +306,21 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.detach"
+                                link_name = "[method]memory-block.detach"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Edetach(
+                            fn testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Edetach(
                                 _: i32,
                                 _: i32,
                             );
                         }
-                        testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Edetach(
+                        testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Edetach(
                             (self).handle() as i32,
                             _rt::as_i32(consumed),
                         );
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// pre-allocate position inside linear memory:
                 /// get recommended allocation size for this object
@@ -328,20 +332,20 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[method]memory.minimum-size"
+                                link_name = "[method]memory-block.minimum-size"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eminimum_size(
+                            fn testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eminimum_size(
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BmethodX5DmemoryX2Eminimum_size(
+                        let ret = testX3AshmX2FexchangeX00X5BmethodX5Dmemory_blockX2Eminimum_size(
                             (self).handle() as i32,
                         );
                         ret as u32
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// pre-allocate position inside linear memory:
                 /// get recommended allocation size for a set of objects
@@ -354,14 +358,14 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[static]memory.optimum-size"
+                                link_name = "[static]memory-block.optimum-size"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eoptimum_size(
+                            fn testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Eoptimum_size(
                                 _: i32,
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eoptimum_size(
+                        let ret = testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Eoptimum_size(
                             _rt::as_i32(&count),
                             _rt::as_i32(size),
                         );
@@ -369,7 +373,7 @@ pub mod test {
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// buffers need a position in linear memory to attach to,
                 /// this function provides a pre-allocated area,
@@ -389,15 +393,15 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[static]memory.add-storage"
+                                link_name = "[static]memory-block.add-storage"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eadd_storage(
+                            fn testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Eadd_storage(
                                 _: i32,
                                 _: i32,
                                 _: *mut u8,
                             );
                         }
-                        testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Eadd_storage(
+                        testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Eadd_storage(
                             (addr0).take_handle() as i32,
                             _rt::as_i32(size0),
                             ptr1,
@@ -421,11 +425,11 @@ pub mod test {
                     }
                 }
             }
-            impl Memory {
+            impl MemoryBlock {
                 #[allow(unused_unsafe, clippy::all)]
                 /// optional: create a buffer local to this linear memory
                 #[allow(async_fn_in_trait)]
-                pub fn create_local(buffer: MemoryArea) -> Memory {
+                pub fn create_local(buffer: MemoryArea) -> MemoryBlock {
                     unsafe {
                         let MemoryArea { addr: addr0, size: size0 } = &buffer;
                         #[link(wasm_import_module = "test:shm/exchange")]
@@ -433,18 +437,18 @@ pub mod test {
                             #[allow(non_snake_case)]
                             #[cfg_attr(
                                 target_arch = "wasm32",
-                                link_name = "[static]memory.create-local"
+                                link_name = "[static]memory-block.create-local"
                             )]
-                            fn testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Ecreate_local(
+                            fn testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Ecreate_local(
                                 _: i32,
                                 _: i32,
                             ) -> i32;
                         }
-                        let ret = testX3AshmX2FexchangeX00X5BstaticX5DmemoryX2Ecreate_local(
+                        let ret = testX3AshmX2FexchangeX00X5BstaticX5Dmemory_blockX2Ecreate_local(
                             (addr0).take_handle() as i32,
                             _rt::as_i32(size0),
                         );
-                        Memory::from_handle(ret as u32)
+                        MemoryBlock::from_handle(ret as u32)
                     }
                 }
             }
@@ -455,7 +459,7 @@ pub mod test {
             #[doc(hidden)]
             static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
-            pub type Memory = super::super::super::test::shm::exchange::Memory;
+            pub type MemoryBlock = super::super::super::test::shm::exchange::MemoryBlock;
             pub type Bytes = super::super::super::test::shm::exchange::Bytes;
             #[derive(Debug)]
             #[repr(transparent)]
@@ -543,7 +547,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn get_stream(
                     &self,
-                ) -> wit_bindgen::rt::async_support::StreamReader<Memory> {
+                ) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
                     unsafe {
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
@@ -646,7 +650,7 @@ pub mod test {
                 /// returns a memory buffer and number of already initialized bytes
                 /// (from last write)
                 #[allow(async_fn_in_trait)]
-                pub fn allocate(&self) -> (Memory, Bytes) {
+                pub fn allocate(&self) -> (MemoryBlock, Bytes) {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -673,7 +677,7 @@ pub mod test {
                         let l1 = *ptr0.add(0).cast::<i32>();
                         let l2 = *ptr0.add(4).cast::<i32>();
                         let result3 = (
-                            super::super::super::test::shm::exchange::Memory::from_handle(
+                            super::super::super::test::shm::exchange::MemoryBlock::from_handle(
                                 l1 as u32,
                             ),
                             l2 as u32,
@@ -686,7 +690,7 @@ pub mod test {
                 #[allow(unused_unsafe, clippy::all)]
                 /// send data to clients
                 #[allow(async_fn_in_trait)]
-                pub fn publish(&self, value: Memory) -> () {
+                pub fn publish(&self, value: MemoryBlock) -> () {
                     unsafe {
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
@@ -908,13 +912,16 @@ pub mod wit_stream {
             #[link_name = "[async-lower][stream-write-0][method]subscriber.get-stream"]
             fn start_write(_: u32, _: *const u8, _: usize) -> u32;
         }
-        unsafe fn lift(ptr: *mut u8) -> super::super::test::shm::pub_sub::Memory {
+        unsafe fn lift(ptr: *mut u8) -> super::super::test::shm::pub_sub::MemoryBlock {
             unsafe {
                 let l0 = *ptr.add(0).cast::<i32>();
-                super::super::test::shm::exchange::Memory::from_handle(l0 as u32)
+                super::super::test::shm::exchange::MemoryBlock::from_handle(l0 as u32)
             }
         }
-        unsafe fn lower(value: super::super::test::shm::pub_sub::Memory, ptr: *mut u8) {
+        unsafe fn lower(
+            value: super::super::test::shm::pub_sub::MemoryBlock,
+            ptr: *mut u8,
+        ) {
             unsafe {
                 *ptr.add(0).cast::<i32>() = (value).take_handle() as i32;
             }
@@ -923,9 +930,9 @@ pub mod wit_stream {
             unsafe {}
         }
         pub static VTABLE: wit_bindgen::rt::async_support::StreamVtable<
-            super::super::test::shm::pub_sub::Memory,
+            super::super::test::shm::pub_sub::MemoryBlock,
         > = wit_bindgen::rt::async_support::StreamVtable::<
-            super::super::test::shm::pub_sub::Memory,
+            super::super::test::shm::pub_sub::MemoryBlock,
         > {
             cancel_write,
             cancel_read,
@@ -939,7 +946,7 @@ pub mod wit_stream {
             start_read,
             start_write,
         };
-        impl super::StreamPayload for super::super::test::shm::pub_sub::Memory {
+        impl super::StreamPayload for super::super::test::shm::pub_sub::MemoryBlock {
             const VTABLE: &'static wit_bindgen::rt::async_support::StreamVtable<Self> = &VTABLE;
         }
     }
@@ -958,33 +965,34 @@ pub mod wit_stream {
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1142] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf9\x07\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1208] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbb\x08\x01A\x02\x01\
 A\x06\x01B!\x04\0\x07address\x03\x01\x01y\x04\0\x05bytes\x03\0\x01\x01r\x02\x05s\
 tart\x02\x03end\x02\x04\0\x12initialized-region\x03\0\x03\x01i\0\x01r\x02\x04add\
 r\x05\x04size\x02\x04\0\x0bmemory-area\x03\0\x06\x01n\x02\x05write\x06shared\x04\
 \0\x0eattach-options\x03\0\x08\x01m\x04\x0ano-storage\x04busy\x0awrong-size\x08i\
-nternal\x04\0\x05error\x03\0\x0a\x04\0\x06memory\x03\x01\x01i\x0c\x01@\x01\x04si\
-ze\x02\0\x0d\x04\0\x13[constructor]memory\x01\x0e\x01h\x0c\x01@\x01\x04self\x0f\0\
-\x0d\x04\0\x14[method]memory.clone\x01\x10\x01j\x01\x07\x01\x0b\x01@\x02\x04self\
-\x0f\x03opt\x09\0\x11\x04\0\x15[method]memory.attach\x01\x12\x01@\x02\x04self\x0f\
-\x08consumed\x02\x01\0\x04\0\x15[method]memory.detach\x01\x13\x01@\x01\x04self\x0f\
-\0\x02\x04\0\x1b[method]memory.minimum-size\x01\x14\x01@\x02\x05county\x04size\x02\
-\0\x02\x04\0\x1b[static]memory.optimum-size\x01\x15\x01j\0\x01\x0b\x01@\x01\x06b\
-uffer\x07\0\x16\x04\0\x1a[static]memory.add-storage\x01\x17\x01@\x01\x06buffer\x07\
-\0\x0d\x04\0\x1b[static]memory.create-local\x01\x18\x03\0\x11test:shm/exchange\x05\
-\0\x02\x03\0\0\x06memory\x02\x03\0\0\x05bytes\x01B\x19\x02\x03\x02\x01\x01\x04\0\
-\x06memory\x03\0\0\x02\x03\x02\x01\x02\x04\0\x05bytes\x03\0\x02\x04\0\x0asubscri\
-ber\x03\x01\x04\0\x09publisher\x03\x01\x01h\x04\x01i\x01\x01f\x01\x07\x01@\x01\x04\
-self\x06\0\x08\x04\0\x1d[method]subscriber.get-stream\x01\x09\x01i\x04\x01@\x01\x08\
-original\x06\0\x0a\x04\0\x18[static]subscriber.clone\x01\x0b\x01i\x05\x01@\x02\x08\
-elementsy\x0celement-size\x03\0\x0c\x04\0\x16[constructor]publisher\x01\x0d\x01h\
-\x05\x01@\x01\x04self\x0e\0\x0a\x04\0\x1d[method]publisher.subscribers\x01\x0f\x01\
-o\x02\x07\x03\x01@\x01\x04self\x0e\0\x10\x04\0\x1a[method]publisher.allocate\x01\
-\x11\x01@\x02\x04self\x0e\x05value\x07\x01\0\x04\0\x19[method]publisher.publish\x01\
-\x12\x03\0\x10test:shm/pub-sub\x05\x03\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\
-\0\x06client\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
-0.236.1\x10wit-bindgen-rust\x060.44.0";
+nternal\x04\0\x05error\x03\0\x0a\x04\0\x0cmemory-block\x03\x01\x01i\x0c\x01@\x01\
+\x04size\x02\0\x0d\x04\0\x19[constructor]memory-block\x01\x0e\x01h\x0c\x01@\x01\x04\
+self\x0f\0\x0d\x04\0\x1a[method]memory-block.clone\x01\x10\x01j\x01\x07\x01\x0b\x01\
+@\x02\x04self\x0f\x03opt\x09\0\x11\x04\0\x1b[method]memory-block.attach\x01\x12\x01\
+@\x02\x04self\x0f\x08consumed\x02\x01\0\x04\0\x1b[method]memory-block.detach\x01\
+\x13\x01@\x01\x04self\x0f\0\x02\x04\0![method]memory-block.minimum-size\x01\x14\x01\
+@\x02\x05county\x04size\x02\0\x02\x04\0![static]memory-block.optimum-size\x01\x15\
+\x01j\0\x01\x0b\x01@\x01\x06buffer\x07\0\x16\x04\0\x20[static]memory-block.add-s\
+torage\x01\x17\x01@\x01\x06buffer\x07\0\x0d\x04\0![static]memory-block.create-lo\
+cal\x01\x18\x03\0\x11test:shm/exchange\x05\0\x02\x03\0\0\x0cmemory-block\x02\x03\
+\0\0\x05bytes\x01B\x19\x02\x03\x02\x01\x01\x04\0\x0cmemory-block\x03\0\0\x02\x03\
+\x02\x01\x02\x04\0\x05bytes\x03\0\x02\x04\0\x0asubscriber\x03\x01\x04\0\x09publi\
+sher\x03\x01\x01h\x04\x01i\x01\x01f\x01\x07\x01@\x01\x04self\x06\0\x08\x04\0\x1d\
+[method]subscriber.get-stream\x01\x09\x01i\x04\x01@\x01\x08original\x06\0\x0a\x04\
+\0\x18[static]subscriber.clone\x01\x0b\x01i\x05\x01@\x02\x08elementsy\x0celement\
+-size\x03\0\x0c\x04\0\x16[constructor]publisher\x01\x0d\x01h\x05\x01@\x01\x04sel\
+f\x0e\0\x0a\x04\0\x1d[method]publisher.subscribers\x01\x0f\x01o\x02\x07\x03\x01@\
+\x01\x04self\x0e\0\x10\x04\0\x1a[method]publisher.allocate\x01\x11\x01@\x02\x04s\
+elf\x0e\x05value\x07\x01\0\x04\0\x19[method]publisher.publish\x01\x12\x03\0\x10t\
+est:shm/pub-sub\x05\x03\x04\0\x0ftest:shm/client\x04\0\x0b\x0c\x01\0\x06client\x03\
+\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.236.1\x10wit-\
+bindgen-rust\x060.44.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
