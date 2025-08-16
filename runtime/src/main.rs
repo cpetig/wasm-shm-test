@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use std::{collections::HashMap, ffi::c_void};
 
 use wasmtime::{
     component::{Component, Linker},
@@ -24,8 +24,8 @@ wasmtime::component::bindgen!({
 pub struct MyMemory {
     size: u32,
     file: i32,
-    buffer_addr: u32,
-    buffer_size: u32,
+    // buffer_addr: u32,
+    // buffer_size: u32,
     attached_addr: *const c_void,
 }
 
@@ -33,9 +33,24 @@ unsafe impl Send for MyMemory {}
 
 pub struct MyAddress;
 
+struct Mapping {
+    addr: u32,
+    size: u32,
+}
+
+#[derive(Copy, Clone, Eq, Hash, PartialEq)]
+struct MemoryId(*const ());
+
+unsafe impl Send for MemoryId {}
+
+trait GetBuffers {
+    fn get_buffers(&mut self) -> &mut HashMap<MemoryId, Vec<Mapping>>;
+}
+
 struct HostState {
     ctx: WasiCtx,
     table: ResourceTable,
+    buffers: HashMap<MemoryId, Vec<Mapping>>,
 }
 
 impl Default for HostState {
@@ -45,6 +60,7 @@ impl Default for HostState {
         Self {
             ctx: builder.build(),
             table: Default::default(),
+            buffers: HashMap::new(),
         }
     }
 }
@@ -64,12 +80,20 @@ impl IoView for HostState {
     }
 }
 
+impl GetBuffers for HostState {
+    fn get_buffers(&mut self) -> &mut HashMap<MemoryId, Vec<Mapping>> {
+        &mut self.buffers
+    }
+}
+
 struct SendMemory<T>(*mut T);
 
 unsafe impl<T> Send for SendMemory<T> {}
 
 mod myshm {
     use std::ffi::{c_char, c_void};
+
+    use crate::{GetBuffers, MemoryId};
 
     use super::test::shm::exchange::{Address, AttachOptions, Bytes, Error, MemoryArea};
     use super::{MyAddress, MyMemory, SendMemory};
@@ -196,6 +220,10 @@ mod myshm {
             _ty: InterfaceType,
             src: &Self::Lower,
         ) -> anyhow::Result<Self> {
+            if !cx.options.has_memory() {
+                dbg!(cx.instance_mut().component().get_export(None, "memory"));
+                anyhow::bail!("WrappedArea without memory")
+            }
             let linear = cx.memory().as_ptr().cast_mut();
             let addr = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.addr)?;
             let size = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.size)?;
@@ -238,8 +266,8 @@ mod myshm {
         Ok((view.table().push(MyMemory {
             file,
             size,
-            buffer_addr: 0,
-            buffer_size: 0,
+            // buffer_addr: 0,
+            // buffer_size: 0,
             attached_addr: std::ptr::null(),
         })?,))
     }
@@ -267,11 +295,13 @@ mod myshm {
     ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
-        let start = unsafe { linear.0.byte_add(obj.buffer_addr as usize) };
+        let buffer_addr: u32 = todo!();
+        let buffer_size: u32 = todo!();
+        let start = unsafe { linear.0.byte_add(buffer_addr as usize) };
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
         let offset = start.align_offset(pagesize);
         let start = unsafe { start.add(offset) };
-        dbg!((linear.0, obj.buffer_addr, start, offset, pagesize));
+        dbg!((linear.0, buffer_addr, start, offset, pagesize));
         let prot = if flags.contains(AttachOptions::WRITE) {
             libc::PROT_READ | libc::PROT_WRITE
         } else {
@@ -290,7 +320,7 @@ mod myshm {
         };
         if addr >= start.cast()
             && unsafe { addr.byte_add(obj.size as usize) }
-                <= unsafe { start.byte_add(obj.buffer_size as usize) }.cast()
+                <= unsafe { start.byte_add(buffer_size as usize) }.cast()
         {
             let obj = view.table().get_mut(&objid).unwrap();
             obj.attached_addr = addr;
@@ -336,17 +366,27 @@ mod myshm {
         Ok((count * size + 2 * pagesize,))
     }
 
-    fn add_storage<T: WasiView + IoView>(
+    fn add_storage<T: WasiView + IoView + GetBuffers>(
         mut ctx: StoreContextMut<'_, T>,
         (area,): (WrappedArea,),
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
-        todo!();
+        let buffers = view.get_buffers();
+
+        //todo!();
         // let obj = view.table().get_mut(&objid).unwrap();
-        // let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
-        // if area.size < obj.size + 2 * pagesize {
-        //     return Ok((Err(Error::WrongSize),));
-        // }
+        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        if area.size < 2 * pagesize {
+            return Ok((Err(Error::WrongSize),));
+        }
+        let mapping = super::Mapping {
+            addr: area.addr,
+            size: area.size,
+        };
+        buffers
+            .entry(MemoryId(area.linear.0.cast()))
+            .or_default()
+            .push(mapping);
         // obj.buffer_addr = area.addr.rep();
         // obj.buffer_size = area.size;
         Ok((Ok(()),))
@@ -354,7 +394,7 @@ mod myshm {
 
     fn create_local<T: WasiView>(
         _ctx: StoreContextMut<'_, T>,
-        (_area,): (MemoryArea,),
+        (_area,): (WrappedArea,),
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
         todo!()
     }
@@ -370,7 +410,7 @@ mod myshm {
         todo!()
     }
 
-    pub(crate) fn add_to_linker<T: WasiView + IoView + 'static>(
+    pub(crate) fn add_to_linker<T: WasiView + IoView + GetBuffers + 'static>(
         l: &mut wasmtime::component::Linker<T>,
     ) -> wasmtime::Result<()> {
         let mut root = l.root();
