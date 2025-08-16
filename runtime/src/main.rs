@@ -220,10 +220,10 @@ mod myshm {
             _ty: InterfaceType,
             src: &Self::Lower,
         ) -> anyhow::Result<Self> {
-            if !cx.options.has_memory() {
-                dbg!(cx.instance_mut().component().get_export(None, "memory"));
-                anyhow::bail!("WrappedArea without memory")
-            }
+            // if !cx.options.has_memory() {
+            //     dbg!(cx.instance_mut().component().get_export(None, "memory"));
+            //     anyhow::bail!("WrappedArea without memory")
+            // }
             let linear = cx.memory().as_ptr().cast_mut();
             let addr = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.addr)?;
             let size = u32::linear_lift_from_flat(cx, InterfaceType::U32, &src.size)?;
@@ -399,11 +399,19 @@ mod myshm {
         todo!()
     }
 
-    fn mem_clone<T: WasiView>(
+    fn mem_clone<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (objid,): (Resource<MyMemory>,),
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
-        todo!()
+        let view = ctx.data_mut();
+        let obj = view.table().get(&objid).unwrap();
+        let obj2 = MyMemory {
+            attached_addr: std::ptr::null(),
+            size: obj.size,
+            file: obj.file,
+        };
+        let res = view.table().push(obj2)?;
+        Ok((res,))
     }
 
     fn ignore<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
@@ -461,7 +469,9 @@ fn main() -> anyhow::Result<()> {
             .map_err(|_e| anyhow::Error::msg("fail?"))?;
         Ok::<(), anyhow::Error>(())
     };
-    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
     let _res = runtime.block_on(future)?;
 
     Ok(())
