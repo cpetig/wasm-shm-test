@@ -5,7 +5,7 @@ use wasmtime::{
     Config, Engine, Store,
 };
 use wasmtime_wasi::{
-    self, p3::bindings::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView,
+    self, p2::bindings::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView,
 };
 use wasmtime_wasi_io::IoView;
 
@@ -322,17 +322,17 @@ fn main() -> anyhow::Result<()> {
 
         let instance = linker.instantiate_async(&mut store, &component).await?;
         let command = Command::new(&mut store, &instance)?;
-        instance
-            .run_concurrent(&mut store, async move |store| {
-                command.wasi_cli_run().call_run(store).await
-            })
-            .await??
-            .map_err(|e| anyhow::Error::msg("fail?"))?;
-        //        instantiate_async(&mut store, &component, &linker).await?;
-        //        command.wasi_cli_run().call_run(store).await?.ok();
+        command
+            .wasi_cli_run()
+            .call_run(&mut store)
+            // instance
+            //     .run_concurrent(&mut store, async move |store| {
+            //         command.wasi_cli_run().call_run(store).await
+            //     })
+            .await?
+            .map_err(|_e| anyhow::Error::msg("fail?"))?;
         Ok::<(), anyhow::Error>(())
     };
-    // let command = Command::instantiate_async(&mut store, &component, &linker);
     let runtime = tokio::runtime::Builder::new_current_thread().build()?;
     let _res = runtime.block_on(future)?;
 
