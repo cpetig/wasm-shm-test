@@ -15,7 +15,7 @@ wasmtime::component::bindgen!({
     include_generated_code_from_file: true,
     debug: true,
     with: {
-        "test:shm/exchange/memory": MyMemory,
+        "test:shm/exchange/memory-block": MyMemory,
         "test:shm/exchange/address": MyAddress,
     }
 });
@@ -416,16 +416,15 @@ mod myshm {
         let mut root = l.root();
         let mut shm = root.instance("test:shm/exchange")?;
         shm.resource("address", ResourceType::host::<MyAddress>(), ignore::<T>)?;
-        shm.resource("memory", ResourceType::host::<MyMemory>(), dtor)?;
-        shm.func_wrap("[constructor]memory", new::<T>)?;
-        // shm.insert("[method]memory.attach", Definition::Func(HostFunc::new(attach::<T>)))?;
-        shm.func_wrap("[method]memory.attach", attach::<T>)?;
-        shm.func_wrap("[method]memory.detach", detach::<T>)?;
-        shm.func_wrap("[method]memory.minimum-size", minimum_size::<T>)?;
-        shm.func_wrap("[method]memory.clone", mem_clone::<T>)?;
-        shm.func_wrap("[static]memory.optimum-size", optimum_size::<T>)?;
-        shm.func_wrap("[static]memory.add-storage", add_storage::<T>)?;
-        shm.func_wrap("[static]memory.create-local", create_local::<T>)?;
+        shm.resource("memory-block", ResourceType::host::<MyMemory>(), dtor)?;
+        shm.func_wrap("[constructor]memory-block", new::<T>)?;
+        shm.func_wrap("[method]memory-block.attach", attach::<T>)?;
+        shm.func_wrap("[method]memory-block.detach", detach::<T>)?;
+        shm.func_wrap("[method]memory-block.minimum-size", minimum_size::<T>)?;
+        shm.func_wrap("[method]memory-block.clone", mem_clone::<T>)?;
+        shm.func_wrap("[static]memory-block.optimum-size", optimum_size::<T>)?;
+        shm.func_wrap("[static]memory-block.add-storage", add_storage::<T>)?;
+        shm.func_wrap("[static]memory-block.create-local", create_local::<T>)?;
         Ok(())
     }
 }

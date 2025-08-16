@@ -46,7 +46,7 @@ use std::{
 #[cfg(feature = "symmetric")]
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-use exchange::{Address, AttachOptions, Bytes, Error, MemoryBlock, MemoryArea};
+use exchange::{Address, AttachOptions, Bytes, Error, MemoryArea, MemoryBlock};
 #[cfg(feature = "symmetric")]
 use exports::test::shm::exchange;
 use exports::test::shm::pub_sub;
@@ -69,9 +69,9 @@ impl pub_sub::Guest for SharedImpl {
 impl exchange::GuestAddress for Dummy {}
 
 #[cfg(feature = "symmetric")]
-impl exchange::GuestMemoryBlock for Arc<MyMemory> {
-    fn new(size: Bytes) -> Self {
-        Self::new(MyMemory {
+impl MyMemory {
+    fn new(size: u32) -> Arc<Self> {
+        Arc::new(MyMemory {
             address: unsafe {
                 std::alloc::alloc(
                     std::alloc::Layout::from_size_align(
@@ -96,6 +96,21 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
             read_consumed: AtomicU32::new(0),
             shared: AtomicBool::new(false),
         })
+    }
+}
+
+fn mem_new(size: u32) -> MemoryBlock {
+    #[cfg(feature = "symmetric")]
+    let res: MemoryBlock = MemoryBlock::new(MyMemory::new(size));
+    #[cfg(feature = "canonical")]
+    let res = MemoryType::new(size);
+    res
+}
+
+#[cfg(feature = "symmetric")]
+impl exchange::GuestMemoryBlock for Arc<MyMemory> {
+    fn new(size: Bytes) -> Self {
+        MyMemory::new(size)
     }
     fn attach(&self, opt: AttachOptions) -> Result<MemoryArea, Error> {
         if opt & AttachOptions::WRITE == AttachOptions::WRITE {
@@ -209,28 +224,32 @@ fn mem_clone(obj: &MemoryBlock) -> MemoryBlock {
 
 impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     fn new(elements: u32, element_size: u32) -> Self {
-        #[cfg(feature = "symmetric")]
-        use exchange::GuestMemoryBlock;
         let mut mem = Vec::new();
-        let alignment = if element_size < 2 || element_size & 1 != 0 {
-            1
-        } else if element_size < 4 || element_size & 2 != 0 {
-            2
-        } else if element_size < 8 || element_size & 4 != 0 {
-            4
-        } else {
-            8
-        };
+        // let alignment = if element_size < 2 || element_size & 1 != 0 {
+        //     1
+        // } else if element_size < 4 || element_size & 2 != 0 {
+        //     2
+        // } else if element_size < 8 || element_size & 4 != 0 {
+        //     4
+        // } else {
+        //     8
+        // };
         for _ in 0..elements {
-            let area = unsafe {
-                std::alloc::alloc(
-                    Layout::from_size_align(element_size as usize, alignment).unwrap(),
-                )
-            };
-            mem.push(MemoryType::create_local(MemoryArea {
-                addr: unsafe { Address::from_handle(area as HandleType) },
-                size: element_size,
-            }));
+            // let area = unsafe {
+            //     std::alloc::alloc(
+            //         Layout::from_size_align(element_size as usize, alignment).unwrap(),
+            //     )
+            // };
+            // #[cfg(feature = "symmetric")]
+            // use exchange::GuestMemoryBlock;
+            // #[cfg(feature = "symmetric")]
+            // mem.push((Arc::<MyMemory> as exchange::GuestMemoryBlock).new(element_size));
+            // #[cfg(feature = "canonical")]
+            mem.push(mem_new(element_size));
+            //     create_local(MemoryArea {
+            //     addr: unsafe { Address::from_handle(area as HandleType) },
+            //     size: element_size,
+            // }));
         }
         Arc::new(MyPublisher {
             elements: elements,
