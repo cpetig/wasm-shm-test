@@ -1265,6 +1265,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "libc",
+ "tokio",
  "wasmtime",
  "wasmtime-wasi",
  "wasmtime-wasi-io",

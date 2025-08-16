@@ -5,8 +5,7 @@ use wasmtime::{
     Config, Engine, Store,
 };
 use wasmtime_wasi::{
-    self, p2::bindings::sync::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView,
-    WasiView,
+    self, p3::bindings::Command, ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView,
 };
 use wasmtime_wasi_io::IoView;
 
@@ -17,6 +16,7 @@ wasmtime::component::bindgen!({
     debug: true,
     with: {
         "test:shm/exchange/memory": MyMemory,
+        "test:shm/exchange/address": MyAddress,
     }
 });
 
@@ -30,6 +30,8 @@ pub struct MyMemory {
 }
 
 unsafe impl Send for MyMemory {}
+
+pub struct MyAddress;
 
 struct HostState {
     ctx: WasiCtx,
@@ -70,8 +72,7 @@ mod myshm {
     use std::ffi::{c_char, c_void};
 
     use super::test::shm::exchange::{Address, AttachOptions, Error, MemoryArea};
-    use super::MyMemory;
-    use super::SendMemory;
+    use super::{MyAddress, MyMemory, SendMemory};
     use wasmtime::{
         component::{
             ComponentType, Lift, Resource, ResourceType,
@@ -148,7 +149,10 @@ mod myshm {
         })?,))
     }
 
-    fn dtor<T: WasiView>(mut ctx: StoreContextMut<'_, T>, objid: u32) -> wasmtime::Result<()> {
+    fn dtor<T: WasiView + IoView>(
+        mut ctx: StoreContextMut<'_, T>,
+        objid: u32,
+    ) -> wasmtime::Result<()> {
         let view = ctx.data_mut();
         let objid = Resource::new_own(objid);
         let obj: MyMemory = view.table().delete(objid).unwrap();
@@ -156,6 +160,12 @@ mod myshm {
         Ok(())
     }
 
+    // fn attach<T: WasiView + IoView>(
+    //     mut ctx: StoreContextMut<'_, T>,
+    //     (_obj, _opt): (Resource<MyMemory>, AttachOptions),
+    // ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
+    //     todo!()
+    // }
     fn attach<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
         (
@@ -239,16 +249,17 @@ mod myshm {
 
     fn add_storage<T: WasiView + IoView>(
         mut ctx: StoreContextMut<'_, T>,
-        (objid, area): (Resource<MyMemory>, MemoryArea),
+        (area,): (MemoryArea,),
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
-        let obj = view.table().get_mut(&objid).unwrap();
-        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
-        if area.size < obj.size + 2 * pagesize {
-            return Ok((Err(Error::WrongSize),));
-        }
-        obj.buffer_addr = area.addr.rep();
-        obj.buffer_size = area.size;
+        todo!();
+        // let obj = view.table().get_mut(&objid).unwrap();
+        // let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
+        // if area.size < obj.size + 2 * pagesize {
+        //     return Ok((Err(Error::WrongSize),));
+        // }
+        // obj.buffer_addr = area.addr.rep();
+        // obj.buffer_size = area.size;
         Ok((Ok(()),))
     }
 
@@ -259,51 +270,71 @@ mod myshm {
         todo!()
     }
 
+    fn mem_clone<T: WasiView>(
+        mut ctx: StoreContextMut<'_, T>,
+        (objid,): (Resource<MyMemory>,),
+    ) -> wasmtime::Result<(Resource<MyMemory>,)> {
+        todo!()
+    }
+
     fn ignore<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
         todo!()
     }
 
-    struct DummyType;
-
-    pub(crate) fn add_to_linker<T: WasiView + 'static>(
+    pub(crate) fn add_to_linker<T: WasiView + IoView + 'static>(
         l: &mut wasmtime::component::Linker<T>,
     ) -> wasmtime::Result<()> {
         let mut root = l.root();
         let mut shm = root.instance("test:shm/exchange")?;
+        shm.resource("address", ResourceType::host::<MyAddress>(), ignore::<T>)?;
         shm.resource("memory", ResourceType::host::<MyMemory>(), dtor)?;
         shm.func_wrap("[constructor]memory", new::<T>)?;
         // shm.insert("[method]memory.attach", Definition::Func(HostFunc::new(attach::<T>)))?;
         shm.func_wrap("[method]memory.attach", attach::<T>)?;
         shm.func_wrap("[method]memory.detach", detach::<T>)?;
         shm.func_wrap("[method]memory.minimum-size", minimum_size::<T>)?;
+        shm.func_wrap("[method]memory.clone", mem_clone::<T>)?;
         shm.func_wrap("[static]memory.optimum-size", optimum_size::<T>)?;
         shm.func_wrap("[static]memory.add-storage", add_storage::<T>)?;
         shm.func_wrap("[static]memory.create-local", create_local::<T>)?;
-        shm.resource("address", ResourceType::host::<DummyType>(), ignore::<T>)?;
         Ok(())
     }
 }
 
 fn main() -> anyhow::Result<()> {
-    let mut config = Config::new();
-    config
-        .wasm_component_model(true)
-        .wasm_component_model_async(true);
+    let future = async move {
+        let mut config = Config::new();
+        config
+            .async_support(true)
+            .wasm_component_model(true)
+            .wasm_component_model_async(true);
 
-    let engine = Engine::new(&config)?;
-    let mut store = Store::new(&engine, HostState::default());
+        let engine = Engine::new(&config)?;
+        let mut store = Store::new(&engine, HostState::default());
 
-    let wasm_module_path = "combined.wasm";
-    let component = Component::from_file(&engine, wasm_module_path)?;
+        let wasm_module_path = "combined.wasm";
+        let component = Component::from_file(&engine, wasm_module_path)?;
 
-    let mut linker = Linker::new(&engine);
-    myshm::add_to_linker(&mut linker)?;
-    wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
-    wasmtime_wasi::p3::add_to_linker(&mut linker)?;
+        let mut linker = Linker::new(&engine);
+        myshm::add_to_linker(&mut linker)?;
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+        wasmtime_wasi::p3::add_to_linker(&mut linker)?;
 
-    let command = Command::instantiate(&mut store, &component, &linker)?;
-
-    command.wasi_cli_run().call_run(&mut store)?.ok();
+        let instance = linker.instantiate_async(&mut store, &component).await?;
+        let command = Command::new(&mut store, &instance)?;
+        instance
+            .run_concurrent(&mut store, async move |store| {
+                command.wasi_cli_run().call_run(store).await
+            })
+            .await??
+            .map_err(|e| anyhow::Error::msg("fail?"))?;
+        //        instantiate_async(&mut store, &component, &linker).await?;
+        //        command.wasi_cli_run().call_run(store).await?.ok();
+        Ok::<(), anyhow::Error>(())
+    };
+    // let command = Command::instantiate_async(&mut store, &component, &linker);
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let _res = runtime.block_on(future)?;
 
     Ok(())
 }
