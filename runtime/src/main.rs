@@ -20,12 +20,34 @@ wasmtime::component::bindgen!({
     }
 });
 
-#[derive(Clone)]
-pub struct MyMemory {
+pub struct MyMemoryInner {
     size: u32,
     file: i32,
-    // buffer_addr: u32,
-    // buffer_size: u32,
+}
+
+impl MyMemoryInner {
+    fn new(size: u32) -> Self {
+        use std::ffi::c_char;
+
+        let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
+        let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
+        let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
+        unsafe { libc::unlink(&name as *const c_char) };
+        unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
+        unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
+        MyMemoryInner { size, file }
+    }
+}
+
+impl Drop for MyMemoryInner {
+    fn drop(&mut self) {
+        unsafe { libc::close(self.file) };
+    }
+}
+
+#[derive(Clone)]
+pub struct MyMemory {
+    inner: std::sync::Arc<MyMemoryInner>,
     attached_addr: *const c_void,
 }
 
@@ -91,9 +113,9 @@ struct SendMemory<T>(*mut T);
 unsafe impl<T> Send for SendMemory<T> {}
 
 mod myshm {
-    use std::ffi::{c_char, c_void};
+    use std::ffi::c_void;
 
-    use crate::{GetBuffers, MemoryId};
+    use crate::{GetBuffers, MemoryId, MyMemoryInner};
 
     use super::test::shm::exchange::{AttachOptions, Bytes, Error, MemoryArea};
     use super::{Mapping, MyAddress, MyMemory, SendMemory};
@@ -240,18 +262,9 @@ mod myshm {
         mut ctx: StoreContextMut<'_, T>,
         (size,): (u32,),
     ) -> wasmtime::Result<(Resource<MyMemory>,)> {
-        let mut chars = c"shm_XXXXXX".to_bytes_with_nul().iter().map(|c| *c as i8);
-        let mut name: [i8; 11] = std::array::from_fn(|_n| chars.next().unwrap());
-        let file = unsafe { libc::mkstemp(&mut name as *mut i8) };
-        unsafe { libc::unlink(&name as *const c_char) };
-        unsafe { libc::lseek64(file, (size as i64) - 1, libc::SEEK_SET) };
-        unsafe { libc::write(file, (&0u8 as *const u8).cast(), 1) };
         let view = ctx.data_mut();
         Ok((view.table().push(MyMemory {
-            file,
-            size,
-            // buffer_addr: 0,
-            // buffer_size: 0,
+            inner: std::sync::Arc::new(MyMemoryInner::new(size)),
             attached_addr: std::ptr::null(),
         })?,))
     }
@@ -262,8 +275,7 @@ mod myshm {
     ) -> wasmtime::Result<()> {
         let view = ctx.data_mut();
         let objid = Resource::new_own(objid);
-        let obj: MyMemory = view.table().delete(objid).unwrap();
-        unsafe { libc::close(obj.file) };
+        let _obj: MyMemory = view.table().delete(objid).unwrap();
         Ok(())
     }
 
@@ -290,29 +302,29 @@ mod myshm {
             let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
             let offset = start.align_offset(pagesize);
             let start = unsafe { start.add(offset) };
-            dbg!((linear.0, buffer_addr, start, offset, pagesize));
+            // dbg!((linear.0, buffer_addr, start, offset, pagesize));
             let prot = if flags.contains(AttachOptions::WRITE) {
                 libc::PROT_READ | libc::PROT_WRITE
             } else {
                 libc::PROT_READ
             };
-            let rounded = (obj.size + pagesize as u32 - 1) & (!(pagesize as u32 - 1));
+            let rounded = (obj.inner.size + pagesize as u32 - 1) & (!(pagesize as u32 - 1));
             let addr = unsafe {
                 libc::mmap(
                     start.cast(),
                     rounded as usize,
                     prot,
                     libc::MAP_SHARED | libc::MAP_FIXED,
-                    obj.file,
+                    obj.inner.file,
                     0,
                 )
             };
             if addr.addr() == 0xffff_ffff_ffff_ffff {
                 return Ok((Err(Error::Internal),));
             }
-            dbg!((rounded, addr));
+            // dbg!((rounded, addr));
             if addr >= start.cast()
-                && unsafe { addr.byte_add(obj.size as usize) }
+                && unsafe { addr.byte_add(obj.inner.size as usize) }
                     <= unsafe { start.byte_add(*buffer_size as usize) }.cast()
             {
                 let obj = view.table().get_mut(&objid).unwrap();
@@ -321,7 +333,7 @@ mod myshm {
                     unsafe { addr.byte_offset_from(linear.0.cast::<c_void>()) } as u32;
                 Ok((Ok(WrappedArea {
                     addr: linear_addr,
-                    size: obj.size,
+                    size: obj.inner.size,
                     linear,
                 }),))
             } else {
@@ -340,7 +352,7 @@ mod myshm {
         let view = ctx.data_mut();
         let obj = view.table().get_mut(&objid).unwrap();
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
-        let rounded = (obj.size + pagesize - 1) & (!(pagesize - 1));
+        let rounded = (obj.inner.size + pagesize - 1) & (!(pagesize - 1));
         let base = obj.attached_addr;
         let res = unsafe { libc::munmap(base.cast_mut(), rounded as usize) };
         assert!(res == 0);
@@ -355,7 +367,7 @@ mod myshm {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap();
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
-        Ok((obj.size + 2 * pagesize,))
+        Ok((obj.inner.size + 2 * pagesize,))
     }
 
     fn optimum_size<T: WasiView>(
@@ -372,7 +384,7 @@ mod myshm {
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
         let buffers = view.get_buffers();
-        dbg!((&area.size, &area.addr, &area.linear.0));
+        // dbg!((&area.size, &area.addr, &area.linear.0));
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
         if area.size < 2 * pagesize {
             return Ok((Err(Error::WrongSize),));
@@ -403,8 +415,7 @@ mod myshm {
         let obj = view.table().get(&objid).unwrap();
         let obj2 = MyMemory {
             attached_addr: std::ptr::null(),
-            size: obj.size,
-            file: obj.file,
+            inner: std::sync::Arc::clone(&obj.inner),
         };
         let res = view.table().push(obj2)?;
         Ok((res,))
