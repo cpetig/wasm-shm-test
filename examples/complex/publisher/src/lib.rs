@@ -3,25 +3,33 @@ use wit_bindgen::rt;
 
 #[cfg(feature = "symmetric")]
 wit_bindgen::generate!({
-    path: "../wit/complex.wit",
+    path: "../wit/",
     world: "send-world",
     debug: true,
     symmetric: true,
     with: {
-        "test:complex/external/subscriber": wasm_shm::Subscriber,
+        "test:shm/pub-sub/subscriber": wasm_shm::Subscriber,
+        "test:shm/exchange": pub_sub,
+        "test:shm/pub-sub": pub_sub,
     }
 });
 #[cfg(feature = "canonical")]
 wit_bindgen::generate!({
-    path: "../wit/complex.wit",
+    path: "../wit/",
     world: "send-world",
     debug: true,
     with: {
-        "test:complex/external/subscriber": wasm_shm::Subscriber,
+        "test:shm/pub-sub/subscriber": wasm_shm::Subscriber,
+        "test:shm/exchange": pub_sub,
+        "test:shm/pub-sub": pub_sub,
     }
 });
 
 struct MyWorld;
+
+mod pub_sub {
+    pub use wasm_shm::Subscriber;
+}
 
 // a simple replacement for wasi::clocks::monotonic_clock::wait_for (no async)
 #[cfg(feature = "symmetric")]

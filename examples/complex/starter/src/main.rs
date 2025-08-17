@@ -1,22 +1,28 @@
 #[cfg(feature = "symmetric")]
 wit_bindgen::generate!({
-    path: "../wit/complex.wit",
+    path: "../wit/",
     world: "starter",
     debug: true,
     symmetric: true,
     with: {
-        "test:complex/external/subscriber": wasm_shm::Subscriber,
+        "test:shm/exchange": pub_sub,
+        "test:shm/pub-sub": pub_sub,
     }
 });
 #[cfg(feature = "canonical")]
 wit_bindgen::generate!({
-    path: "../wit/complex.wit",
+    path: "../wit/",
     world: "starter",
     debug: true,
     with: {
-        "test:complex/external/subscriber": wasm_shm::Subscriber,
+        "test:shm/exchange": pub_sub,
+        "test:shm/pub-sub": pub_sub,
     }
 });
+
+mod pub_sub {
+    pub use wasm_shm::Subscriber;
+}
 
 fn main() {
     let publ = test::complex::sender::start();

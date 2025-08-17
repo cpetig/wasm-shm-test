@@ -82,6 +82,9 @@ the `bindgen!` macro works equally well.
 `list<string>` to two subscribers - without ever copying the contents after
 the initial (mostly in-place) buffer creation.
 
+See [this issue](https://github.com/WebAssembly/component-model/issues/398)
+for further discussion.
+
 ## Building
 
  - runtime: Simply `cargo build` in `runtime`
@@ -91,12 +94,9 @@ the initial (mostly in-place) buffer creation.
 
 ## TODO
 
+ - On wasmtime the complex example ends in a deadlock, likely I somehow messed 
+   the combination of `spawn` and `block_on` in the example main up.
  - The wasi-clocks emulation for symmetric works around that async functions are
    not yet supported by symmetric (streams and futures work).
- - Ideally a `list<string>` publisher subscriber example in multiple languages;
-   This requires flat data types, see
-   [this github repo](https://github.com/cpetig/flat-types-rust) for a prototype.
-   And [this issue](https://github.com/WebAssembly/component-model/issues/398)
-   for a discussion.
- - This can create a foundation for 
+ - The complex example can create a foundation for 
    [caller provided buffers](https://github.com/WebAssembly/component-model/issues/369).

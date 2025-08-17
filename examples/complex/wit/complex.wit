@@ -1,16 +1,16 @@
 package test:complex;
 
-interface external {
-    resource subscriber;
-}
+// interface external {
+//     resource subscriber;
+// }
 
 interface sender {
-    use external.{subscriber};
+    use test:shm/pub-sub.{subscriber};
     start: func() -> subscriber;
 }
 
 interface receiver {
-    use external.{subscriber};
+    use test:shm/pub-sub.{subscriber};
     start: func(source: subscriber, block: bool);
 }
 
