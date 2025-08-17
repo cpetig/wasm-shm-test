@@ -1,1 +1,5 @@
 /target
+/combined.wasm
+/combined1.wasm
+/combined2.wasm
+/component.wasm
