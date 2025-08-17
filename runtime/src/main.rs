@@ -95,12 +95,15 @@ mod myshm {
 
     use crate::{GetBuffers, MemoryId};
 
-    use super::test::shm::exchange::{Address, AttachOptions, Bytes, Error, MemoryArea};
-    use super::{MyAddress, MyMemory, SendMemory};
+    use super::test::shm::exchange::{AttachOptions, Bytes, Error, MemoryArea};
+    use super::{Mapping, MyAddress, MyMemory, SendMemory};
+    use wasmtime::component::Lower;
     use wasmtime::{
         component::{
             ComponentType, Lift, Resource, ResourceType,
-            __internal::{CanonicalAbiInfo, InstanceType, InterfaceType, LiftContext},
+            __internal::{
+                CanonicalAbiInfo, InstanceType, InterfaceType, LiftContext, LowerContext,
+            },
         },
         StoreContextMut,
     };
@@ -152,47 +155,6 @@ mod myshm {
     }
 
     unsafe impl Sync for WrappedMemory {}
-
-    struct WrappedAddress {
-        inner: u32,
-        linear: SendMemory<u8>,
-    }
-
-    unsafe impl ComponentType for WrappedAddress {
-        type Lower = <Resource<MyMemory> as ComponentType>::Lower;
-        const ABI: CanonicalAbiInfo = <Resource<MyMemory> as ComponentType>::ABI;
-        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
-            <Resource<MyMemory> as ComponentType>::typecheck(ty, types)
-        }
-    }
-
-    unsafe impl Lift for WrappedAddress {
-        fn linear_lift_from_flat(
-            cx: &mut LiftContext<'_>,
-            _ty: InterfaceType,
-            src: &Self::Lower,
-        ) -> anyhow::Result<Self> {
-            let linear = cx.memory().as_ptr().cast_mut();
-            u32::linear_lift_from_flat(cx, InterfaceType::U32, src).map(|a| WrappedAddress {
-                inner: a,
-                linear: SendMemory(linear),
-            })
-        }
-
-        fn linear_lift_from_memory(
-            cx: &mut LiftContext<'_>,
-            _ty: InterfaceType,
-            bytes: &[u8],
-        ) -> anyhow::Result<Self> {
-            let linear = cx.memory().as_ptr().cast_mut();
-            u32::linear_lift_from_memory(cx, InterfaceType::U32, bytes).map(|a| WrappedAddress {
-                inner: a,
-                linear: SendMemory(linear),
-            })
-        }
-    }
-
-    unsafe impl Sync for WrappedAddress {}
 
     struct WrappedArea {
         addr: u32,
@@ -250,6 +212,28 @@ mod myshm {
         }
     }
 
+    unsafe impl Lower for WrappedArea {
+        fn linear_lower_to_flat<T>(
+            &self,
+            _cx: &mut LowerContext<'_, T>,
+            _ty: InterfaceType,
+            _dst: &mut std::mem::MaybeUninit<Self::Lower>,
+        ) -> anyhow::Result<()> {
+            todo!()
+        }
+
+        fn linear_lower_to_memory<T>(
+            &self,
+            cx: &mut LowerContext<'_, T>,
+            _ty: InterfaceType,
+            offset: usize,
+        ) -> anyhow::Result<()> {
+            u32::linear_lower_to_memory(&self.addr, cx, InterfaceType::U32, offset)?;
+            u32::linear_lower_to_memory(&self.size, cx, InterfaceType::U32, offset + 4)?;
+            Ok(())
+        }
+    }
+
     unsafe impl Sync for WrappedArea {}
 
     fn new<T: WasiView + IoView>(
@@ -283,7 +267,7 @@ mod myshm {
         Ok(())
     }
 
-    fn attach<T: WasiView + IoView>(
+    fn attach<T: WasiView + IoView + GetBuffers>(
         mut ctx: StoreContextMut<'_, T>,
         (
             WrappedMemory {
@@ -292,44 +276,59 @@ mod myshm {
             },
             flags,
         ): (WrappedMemory, AttachOptions),
-    ) -> wasmtime::Result<(Result<MemoryArea, Error>,)> {
+    ) -> wasmtime::Result<(Result<WrappedArea, Error>,)> {
         let view = ctx.data_mut();
         let obj = view.table().get(&objid).unwrap().clone();
-        let buffer_addr: u32 = todo!();
-        let buffer_size: u32 = todo!();
-        let start = unsafe { linear.0.byte_add(buffer_addr as usize) };
-        let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
-        let offset = start.align_offset(pagesize);
-        let start = unsafe { start.add(offset) };
-        dbg!((linear.0, buffer_addr, start, offset, pagesize));
-        let prot = if flags.contains(AttachOptions::WRITE) {
-            libc::PROT_READ | libc::PROT_WRITE
-        } else {
-            libc::PROT_READ
-        };
-        let rounded = (obj.size + pagesize as u32 - 1) & (!(pagesize as u32 - 1));
-        let addr = unsafe {
-            libc::mmap(
-                start.cast(),
-                rounded as usize,
-                prot,
-                libc::MAP_SHARED | libc::MAP_FIXED,
-                obj.file,
-                0,
-            )
-        };
-        if addr >= start.cast()
-            && unsafe { addr.byte_add(obj.size as usize) }
-                <= unsafe { start.byte_add(buffer_size as usize) }.cast()
+        let linear_list = view.get_buffers().get(&MemoryId(linear.0.cast()));
+        let mapping = linear_list.and_then(|l| l.get(0));
+        if let Some(Mapping {
+            addr: buffer_addr,
+            size: buffer_size,
+        }) = mapping
         {
-            let obj = view.table().get_mut(&objid).unwrap();
-            obj.attached_addr = addr;
-            let linear_addr = unsafe { addr.byte_offset_from(linear.0.cast::<c_void>()) } as u32;
-            Ok((Ok(MemoryArea {
-                addr: wasmtime::component::Resource::<Address>::new_own(linear_addr),
-                size: obj.size,
-            }),))
+            let start = unsafe { linear.0.byte_add(*buffer_addr as usize) };
+            let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as usize;
+            let offset = start.align_offset(pagesize);
+            let start = unsafe { start.add(offset) };
+            dbg!((linear.0, buffer_addr, start, offset, pagesize));
+            let prot = if flags.contains(AttachOptions::WRITE) {
+                libc::PROT_READ | libc::PROT_WRITE
+            } else {
+                libc::PROT_READ
+            };
+            let rounded = (obj.size + pagesize as u32 - 1) & (!(pagesize as u32 - 1));
+            let addr = unsafe {
+                libc::mmap(
+                    start.cast(),
+                    rounded as usize,
+                    prot,
+                    libc::MAP_SHARED | libc::MAP_FIXED,
+                    obj.file,
+                    0,
+                )
+            };
+            if addr.addr() == 0xffff_ffff_ffff_ffff {
+                return Ok((Err(Error::Internal),));
+            }
+            dbg!((rounded, addr));
+            if addr >= start.cast()
+                && unsafe { addr.byte_add(obj.size as usize) }
+                    <= unsafe { start.byte_add(*buffer_size as usize) }.cast()
+            {
+                let obj = view.table().get_mut(&objid).unwrap();
+                obj.attached_addr = addr;
+                let linear_addr =
+                    unsafe { addr.byte_offset_from(linear.0.cast::<c_void>()) } as u32;
+                Ok((Ok(WrappedArea {
+                    addr: linear_addr,
+                    size: obj.size,
+                    linear,
+                }),))
+            } else {
+                Ok((Err(Error::Internal),))
+            }
         } else {
+            dbg!(linear.0);
             Ok((Err(Error::Internal),))
         }
     }
@@ -343,7 +342,8 @@ mod myshm {
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
         let rounded = (obj.size + pagesize - 1) & (!(pagesize - 1));
         let base = obj.attached_addr;
-        unsafe { libc::munmap(base.cast_mut(), rounded as usize) };
+        let res = unsafe { libc::munmap(base.cast_mut(), rounded as usize) };
+        assert!(res == 0);
         obj.attached_addr = std::ptr::null();
         Ok(())
     }
@@ -372,9 +372,7 @@ mod myshm {
     ) -> wasmtime::Result<(Result<(), Error>,)> {
         let view = ctx.data_mut();
         let buffers = view.get_buffers();
-
-        //todo!();
-        // let obj = view.table().get_mut(&objid).unwrap();
+        dbg!((&area.size, &area.addr, &area.linear.0));
         let pagesize = unsafe { libc::sysconf(libc::_SC_PAGESIZE) } as u32;
         if area.size < 2 * pagesize {
             return Ok((Err(Error::WrongSize),));
@@ -387,8 +385,6 @@ mod myshm {
             .entry(MemoryId(area.linear.0.cast()))
             .or_default()
             .push(mapping);
-        // obj.buffer_addr = area.addr.rep();
-        // obj.buffer_size = area.size;
         Ok((Ok(()),))
     }
 

@@ -16,6 +16,7 @@ fn read_value(buf: wasm_shm::MemoryBlock) -> u32 {
 }
 
 pub fn main() {
+    println!("Publisher example");
     let publisher = publisher::start();
     let mut stream = publisher.get_stream();
     let future1 = async move {
