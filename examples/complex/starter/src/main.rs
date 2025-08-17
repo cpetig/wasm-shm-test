@@ -29,11 +29,15 @@ fn main() {
 #[cfg(feature = "symmetric")]
 pub mod link {
     pub fn dummy() {
-        #[link(name="consumer")]
-        unsafe extern "C" { fn testX3AcomplexX2FreceiverX00start(_: *mut u8, _: i32); }
-        unsafe {testX3AcomplexX2FreceiverX00start(std::ptr::null_mut(), 0)};
-        #[link(name="publisher")]
-        unsafe extern "C" { fn testX3AcomplexX2FsenderX00start() -> *mut u8; }
-        unsafe {testX3AcomplexX2FsenderX00start()};
+        #[link(name = "consumer")]
+        unsafe extern "C" {
+            fn testX3AcomplexX2FreceiverX00start(_: *mut u8, _: i32);
+        }
+        unsafe { testX3AcomplexX2FreceiverX00start(std::ptr::null_mut(), 0) };
+        #[link(name = "publisher")]
+        unsafe extern "C" {
+            fn testX3AcomplexX2FsenderX00start() -> *mut u8;
+        }
+        unsafe { testX3AcomplexX2FsenderX00start() };
     }
 }

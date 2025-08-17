@@ -18,6 +18,7 @@ checksum = "6a65b545ab31d687cff52899d4890855fec459eb6afe0da6417b8a18da87aa29"
 name = "consumer"
 version = "0.1.0"
 dependencies = [
+ "flat",
  "futures",
  "mini-bindgen",
  "symmetric_executor",
@@ -35,6 +36,10 @@ name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
+
+[[package]]
+name = "flat"
+version = "0.1.0"
 
 [[package]]
 name = "foldhash"
@@ -244,6 +249,7 @@ dependencies = [
 name = "publisher"
 version = "0.1.0"
 dependencies = [
+ "flat",
  "futures",
  "mini-bindgen",
  "symmetric_executor",

@@ -5,3 +5,6 @@
 	path = wit-bindgen
 	url = https://github.com/cpetig/wit-bindgen.git
 	branch = work-in-progress
+[submodule "flat-types-rust"]
+	path = flat-types-rust
+	url = https://github.com/cpetig/flat-types-rust

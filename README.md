@@ -75,6 +75,13 @@ wasm (canonical ABI) requires a fork of wit-bindgen (included).
 The generated code checked in at rust-client is just for debugging convenience,
 the `bindgen!` macro works equally well.
 
+## Complex example
+
+`examples/complex` contains a complex example which uses 
+[flat data types](https://github.com/cpetig/flat-types-rust) to publish a
+`list<string>` to two subscribers - without ever copying the contents after
+the initial (mostly in-place) buffer creation.
+
 ## Building
 
  - runtime: Simply `cargo build` in `runtime`

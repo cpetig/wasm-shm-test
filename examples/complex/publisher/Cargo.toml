@@ -10,6 +10,7 @@ symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", 
 symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
 wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
 futures = "0.3.31"
+flat = { version = "0.1.0", path = "../../../flat-types-rust" }
 
 [lib]
 crate-type = [ "cdylib" ]
