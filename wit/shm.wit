@@ -50,10 +50,11 @@ interface exchange {
 
         // pre-allocate position inside linear memory:
         // get recommended allocation size for this object
+        // (this adds machine specific alignment padding)
         minimum-size: func() -> bytes;
         // pre-allocate position inside linear memory:
-        // get recommended allocation size for a set of objects 
-        // (attached in parallel)
+        // get recommended allocation size for a set of attachments 
+        // (can be attached simultaneously up to count)
         optimum-size: static func(count: u32, size: bytes) -> bytes;
         // buffers need a position in linear memory to attach to, 
         // this function provides a pre-allocated area,
