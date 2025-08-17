@@ -1,7 +1,7 @@
 [package]
 name = "consumer"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 wasm-shm = { path = "../../../symmetric/rust-client", default-features = false }
@@ -10,6 +10,9 @@ symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", 
 symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
 wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
 futures = "0.3.31"
+
+[lib]
+crate-type = [ "cdylib" ]
 
 [features]
 default = [ "symmetric" ]

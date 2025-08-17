@@ -11,6 +11,9 @@ symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symm
 wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
 futures = "0.3.31"
 
+[lib]
+crate-type = [ "cdylib" ]
+
 [features]
 default = [ "symmetric" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]

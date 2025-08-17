@@ -1,14 +1,29 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#[cfg(feature = "symmetric")]
+wit_bindgen::generate!({
+    path: "../wit/complex.wit",
+    world: "rec-world",
+    debug: true,
+    symmetric: true,
+    with: {
+        "test:complex/external/subscriber": wasm_shm::Subscriber,
+    }
+});
+#[cfg(feature = "canonical")]
+wit_bindgen::generate!({
+    path: "../wit/complex.wit",
+    world: "rec-world",
+    debug: true,
+    with: {
+        "test:complex/external/subscriber": wasm_shm::Subscriber,
+    }
+});
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+struct MyWorld;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl exports::test::complex::receiver::Guest for MyWorld {
+    fn start(src: wasm_shm::Subscriber, block: bool) {
+        todo!()
     }
 }
+
+export!(MyWorld);
