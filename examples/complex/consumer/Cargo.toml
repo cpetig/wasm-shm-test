@@ -1,0 +1,17 @@
+[package]
+name = "consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasm-shm = { path = "../../../symmetric/rust-client", default-features = false }
+wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
+symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
+wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
+futures = "0.3.31"
+
+[features]
+default = [ "symmetric" ]
+symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]
+canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
