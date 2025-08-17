@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-publisher = { path = "../publisher", default-features = false }
-consumer = { path = "../consumer", default-features = false }
+publisher = { path = "../publisher", default-features = false, optional = true }
+consumer = { path = "../consumer", default-features = false, optional = true }
 wasm-shm = { path = "../../../symmetric/rust-client", default-features = false }
 wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
 symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
