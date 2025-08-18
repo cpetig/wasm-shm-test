@@ -11,6 +11,7 @@ symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symm
 wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
 futures = "0.3.31"
 flat = { version = "0.1.0", path = "../../../flat-types-rust" }
+publisher_link = { package = "publisher", path = "../publisher", optional = true, default-features = false }
 
 [lib]
 crate-type = [ "cdylib" ]
@@ -19,3 +20,4 @@ crate-type = [ "cdylib" ]
 default = [ "symmetric" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
+combined = [ "canonical", "publisher_link/canonical" ]

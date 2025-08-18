@@ -104,3 +104,7 @@ impl exports::test::complex::sender::Guest for MyWorld {
 }
 
 export!(MyWorld);
+
+// used to force linking to our rlib in the "combined" feature of "consumer"
+#[cfg(feature = "canonical")]
+pub fn link_to_publisher() {}

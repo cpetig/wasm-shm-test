@@ -14,7 +14,8 @@ flat = { version = "0.1.0", path = "../../../flat-types-rust" }
 wasi-clocks = { path = "../../../symmetric/wasi-clocks/import", default-features = false }
 
 [lib]
-crate-type = [ "cdylib" ]
+# rlib is only needed for the "combined" feature of consumer
+crate-type = [ "rlib", "cdylib" ]
 
 [features]
 default = [ "symmetric" ]

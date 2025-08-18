@@ -66,3 +66,9 @@ impl exports::test::complex::receiver::Guest for MyWorld {
 }
 
 export!(MyWorld);
+
+// just to force linking
+#[cfg(feature = "combined")]
+pub fn dummy() {
+    publisher_link::link_to_publisher();
+}
