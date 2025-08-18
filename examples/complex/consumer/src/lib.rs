@@ -47,6 +47,7 @@ fn read_value(buf: wasm_shm::MemoryBlock) {
 impl exports::test::complex::receiver::Guest for MyWorld {
     fn start(src: wasm_shm::Subscriber, block: bool) {
         let mut stream = src.get_stream();
+        drop(src); // this closes the publisher when the writer drops
         let future = async move {
             loop {
                 if let Some(buf) = stream.next().await {
