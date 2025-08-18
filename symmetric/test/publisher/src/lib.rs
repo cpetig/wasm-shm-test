@@ -34,12 +34,12 @@ use wasi_clocks::monotonic_clock::wait_for;
 use wit_bindgen::rt;
 
 pub fn start() -> wasm_shm::Subscriber {
-    let memsize = wasm_shm::Memory::optimum_size(5, 256);
+    let memsize = wasm_shm::MemoryBlock::optimum_size(5, 256);
     let alloc = if memsize > 0 {
         let area = unsafe {
             std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
         };
-        wasm_shm::Memory::add_storage(wasm_shm::MemoryArea {
+        wasm_shm::MemoryBlock::add_storage(wasm_shm::MemoryArea {
             addr: unsafe { Address::from_handle((area as usize).try_into().unwrap()) },
             size: memsize,
         })
