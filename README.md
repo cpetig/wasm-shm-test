@@ -91,11 +91,13 @@ for further discussion.
  - simple example: `cd runtime; ./build.sh; cargo run`
  - pub-sub native: `cd symmetric/test/subscriber; cargo run`
  - pub-sub wasm: `cd symmetric; ./build-wasi.sh; ../runtime/target/debug/runtime`
+ - complex example: `cd symmetric; ./build-wasi.sh; cd ../example/complex/starter ; ./build-wasm2.sh ; ../../../runtime/target/debug/runtime `
+ - complex native: `cd example/complex/starter ; cargo run`
 
 ## TODO
 
- - On wasmtime the complex example ends in a deadlock, likely I somehow messed 
-   the combination of `spawn` and `block_on` in the example main up.
+ - On wasmtime the complex example built by `build-wasm.sh` ends in a deadlock, 
+   while fusing consumer and publisher into one module fixes this somehow.
  - The wasi-clocks emulation for symmetric works around that async functions are
    not yet supported by symmetric (streams and futures work).
  - The complex example can create a foundation for 
