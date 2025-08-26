@@ -328,9 +328,8 @@ dependencies = [
 name = "symmetric_stream"
 version = "0.1.0"
 dependencies = [
- "dummy-rt",
+ "mini-bindgen",
  "symmetric_executor",
- "wit-bindgen-symmetric-rt",
 ]
 
 [[package]]
@@ -374,8 +373,8 @@ dependencies = [
 
 [[package]]
 name = "wasm-encoder"
-version = "0.236.1"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#111361dc41d9b1acbef3369c471c42c0f1e5ce2f"
+version = "0.238.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#605f268c9d35ec764bf0771aa052ac0a76062211"
 dependencies = [
  "leb128fmt",
  "wasmparser",
@@ -383,8 +382,8 @@ dependencies = [
 
 [[package]]
 name = "wasm-metadata"
-version = "0.236.1"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#111361dc41d9b1acbef3369c471c42c0f1e5ce2f"
+version = "0.238.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#605f268c9d35ec764bf0771aa052ac0a76062211"
 dependencies = [
  "anyhow",
  "indexmap",
@@ -402,8 +401,8 @@ dependencies = [
 
 [[package]]
 name = "wasmparser"
-version = "0.236.1"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#111361dc41d9b1acbef3369c471c42c0f1e5ce2f"
+version = "0.238.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#605f268c9d35ec764bf0771aa052ac0a76062211"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -475,8 +474,8 @@ dependencies = [
 
 [[package]]
 name = "wit-component"
-version = "0.236.1"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#111361dc41d9b1acbef3369c471c42c0f1e5ce2f"
+version = "0.238.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#605f268c9d35ec764bf0771aa052ac0a76062211"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -493,8 +492,8 @@ dependencies = [
 
 [[package]]
 name = "wit-parser"
-version = "0.236.1"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#111361dc41d9b1acbef3369c471c42c0f1e5ce2f"
+version = "0.238.0"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#605f268c9d35ec764bf0771aa052ac0a76062211"
 dependencies = [
  "anyhow",
  "id-arena",
