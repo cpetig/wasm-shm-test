@@ -57,7 +57,7 @@ Caveat: This implementation isn't checking the semantic behavior
 
 ## Publisher subscriber
 
-The `symmetric` folder contains a publisher-subscriber setup which uses
+The `pub-sub` folder contains a publisher-subscriber setup which uses
 memory blocks to achieve zero copy.
 
 In there:
@@ -89,9 +89,9 @@ for further discussion.
 
  - runtime: Simply `cargo build` in `runtime`
  - simple example: `cd runtime; ./build.sh; cargo run`
- - pub-sub native: `cd symmetric/test/subscriber; cargo run`
- - pub-sub wasm: `cd symmetric; ./build-wasi.sh; ../runtime/target/debug/runtime`
- - complex example: `cd symmetric; ./build-wasi.sh; cd ../example/complex/starter ; ./build-wasm2.sh ; ../../../runtime/target/debug/runtime `
+ - pub-sub native: `cd pub-sub/test/subscriber; cargo run`
+ - pub-sub wasm: `cd pub-sub; ./build-wasi.sh; ../runtime/target/debug/runtime`
+ - complex example: `cd pub-sub; ./build-wasi.sh; cd ../example/complex/starter ; ./build-wasm2.sh ; ../../../runtime/target/debug/runtime `
  - complex native: `cd example/complex/starter ; cargo run`
 
 ## TODO

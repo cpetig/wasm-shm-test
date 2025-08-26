@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 symmetric_executor = { path = "../../wit-bindgen/crates/symmetric_executor", optional=true }
 symmetric_stream = { path = "../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
-wit-bindgen = { path = "../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features=false, features=["async"] }
+wit-bindgen = { path = "../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features=false, features=["async"] }
 
 [lib]
 crate-type = ["cdylib"]

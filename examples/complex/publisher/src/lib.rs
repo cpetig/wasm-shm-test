@@ -1,19 +1,6 @@
 use wasm_shm::{Address, AttachOptions};
 use wit_bindgen::rt;
 
-#[cfg(feature = "symmetric")]
-wit_bindgen::generate!({
-    path: "../wit/",
-    world: "send-world",
-    debug: true,
-    symmetric: true,
-    with: {
-        "test:shm/pub-sub/subscriber": wasm_shm::Subscriber,
-        "test:shm/exchange": pub_sub,
-        "test:shm/pub-sub": pub_sub,
-    }
-});
-#[cfg(feature = "canonical")]
 wit_bindgen::generate!({
     path: "../wit/",
     world: "send-world",

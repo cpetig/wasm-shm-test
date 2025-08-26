@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wasm-shm = { path = "../../../symmetric/rust-client", default-features = false }
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+wasm-shm = { path = "../../../pub-sub/rust-client", default-features = false }
+wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
 symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
 symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
-wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
+wasi-clocks-symmetric = { path = "../../../pub-sub/wasi-clocks", optional=true }
 futures = "0.3.31"
 flat = { version = "0.1.0", path = "../../../flat-types-rust" }
 publisher_link = { package = "publisher", path = "../publisher", optional = true, default-features = false }

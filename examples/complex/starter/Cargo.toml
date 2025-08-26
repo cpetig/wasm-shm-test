@@ -6,11 +6,11 @@ edition = "2024"
 [dependencies]
 publisher = { path = "../publisher", default-features = false, optional = true }
 consumer = { path = "../consumer", default-features = false, optional = true }
-wasm-shm = { path = "../../../symmetric/rust-client", default-features = false }
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+wasm-shm = { path = "../../../pub-sub/rust-client", default-features = false }
+wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
 symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
 symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
-wasi-clocks-symmetric = { path = "../../../symmetric/wasi-clocks", optional=true }
+wasi-clocks-symmetric = { path = "../../../pub-sub/wasi-clocks", optional=true }
 
 [features]
 default = [ "symmetric" ]

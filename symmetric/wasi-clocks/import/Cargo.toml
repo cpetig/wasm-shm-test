@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/dummy-bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
 
 [features]
 default = [ "symmetric" ]

@@ -1,15 +1,3 @@
-#[cfg(feature = "symmetric")]
-wit_bindgen::generate!({
-    path: "../wit/",
-    world: "starter",
-    debug: true,
-    symmetric: true,
-    with: {
-        "test:shm/exchange": pub_sub,
-        "test:shm/pub-sub": pub_sub,
-    }
-});
-#[cfg(feature = "canonical")]
 wit_bindgen::generate!({
     path: "../wit/",
     world: "starter",
