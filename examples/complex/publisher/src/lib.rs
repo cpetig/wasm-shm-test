@@ -18,17 +18,6 @@ mod pub_sub {
     pub use wasm_shm::Subscriber;
 }
 
-// a simple replacement for wasi::clocks::monotonic_clock::wait_for (no async)
-#[cfg(feature = "symmetric")]
-mod easy_way_out {
-    use wit_bindgen::rt;
-
-    // only works on symmetric (avoids async function)
-    pub async fn wait_for(nanoseconds: u64) {
-        rt::async_support::wait_on(rt::EventSubscription::from_timeout(nanoseconds)).await;
-    }
-}
-
 const NUMBERS: [&str; 10] = [
     "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
 ];
@@ -54,9 +43,6 @@ fn write_to_buffer(value: u32, buffer: &mut wasm_shm::MemoryBlock) -> Result<(),
     Ok(())
 }
 
-#[cfg(feature = "symmetric")]
-use easy_way_out::wait_for;
-#[cfg(feature = "canonical")]
 use wasi_clocks::monotonic_clock::wait_for;
 
 impl exports::test::complex::sender::Guest for MyWorld {

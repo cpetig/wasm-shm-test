@@ -25,7 +25,7 @@ impl monotonic_clock::Guest for WasiClocks {
     async fn wait_until(_when: monotonic_clock::Instant) {
         todo!()
     }
-    async fn wait_for(_how_long: monotonic_clock::Duration) {
-        todo!()
+    async fn wait_for(how_long: monotonic_clock::Duration) {
+        wit_bindgen::rt::async_support::wait_on(wit_bindgen::rt::EventSubscription::from_timeout(how_long)).await;
     }
 }
