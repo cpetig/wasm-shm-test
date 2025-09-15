@@ -82,6 +82,8 @@ interface pub-sub {
         /// clone
         //clone: static func(original: borrow<publisher>) -> publisher;
         subscribers: func() -> subscriber;
+        /// subscription short-cut
+        get-stream: func() -> stream<memory-block>;
         /// returns a memory buffer and number of already initialized bytes 
         /// (from last write)
         allocate: func() -> tuple<memory-block, bytes>;

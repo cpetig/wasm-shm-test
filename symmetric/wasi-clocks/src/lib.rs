@@ -10,7 +10,7 @@ impl wall_clock::Guest for WasiClocks {
     fn now() -> wall_clock::Datetime {
         todo!()
     }
-    fn resolution() -> wall_clock::Datetime {
+    fn get_resolution() -> wall_clock::Datetime {
         todo!()
     }
 }
@@ -19,7 +19,7 @@ impl monotonic_clock::Guest for WasiClocks {
     fn now() -> monotonic_clock::Instant {
         todo!()
     }
-    fn resolution() -> monotonic_clock::Duration {
+    fn get_resolution() -> monotonic_clock::Duration {
         todo!()
     }
     async fn wait_until(_when: monotonic_clock::Instant) {

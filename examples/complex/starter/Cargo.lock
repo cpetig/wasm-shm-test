@@ -269,6 +269,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc-stable-hash"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08"
+
+[[package]]
 name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -438,33 +444,29 @@ dependencies = [
 
 [[package]]
 name = "wit-bindgen"
-version = "0.44.0"
+version = "0.46.0"
 dependencies = [
- "wit-bindgen-rt",
+ "bitflags",
+ "futures",
+ "once_cell",
  "wit-bindgen-rust-macro",
 ]
 
 [[package]]
 name = "wit-bindgen-core"
-version = "0.44.0"
+version = "0.46.0"
 dependencies = [
  "anyhow",
  "heck",
+ "indexmap",
+ "rustc-stable-hash",
+ "wit-component",
  "wit-parser",
 ]
 
 [[package]]
-name = "wit-bindgen-rt"
-version = "0.44.0"
-dependencies = [
- "bitflags",
- "futures",
- "once_cell",
-]
-
-[[package]]
 name = "wit-bindgen-rust"
-version = "0.44.0"
+version = "0.46.0"
 dependencies = [
  "anyhow",
  "heck",
@@ -478,7 +480,7 @@ dependencies = [
 
 [[package]]
 name = "wit-bindgen-rust-macro"
-version = "0.44.0"
+version = "0.46.0"
 dependencies = [
  "anyhow",
  "prettyplease",
