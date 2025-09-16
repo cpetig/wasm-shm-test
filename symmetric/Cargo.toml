@@ -8,6 +8,7 @@ futures = "0.3.31"
 symmetric_executor = { path = "../wit-bindgen/crates/symmetric_executor", optional = true }
 symmetric_stream = { path = "../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional = true }
 wit-bindgen = { path = "../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+#wit-bindgen = "0.45"
 
 [lib]
 crate-type = [ "cdylib" ]

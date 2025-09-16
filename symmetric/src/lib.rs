@@ -2,9 +2,9 @@
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl",
-    // debug: true,
-//    symmetric: true,
+    debug: true,
 });
+//    symmetric: true,
 #[cfg(feature = "canonical")]
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
