@@ -26,8 +26,8 @@ struct MyMemory {
 }
 
 struct MyPublisher {
-    elements: u32,
-    element_size: u32,
+    _elements: u32,
+    _element_size: u32,
     subscribers: Mutex<Vec<StreamWriter<MemoryBlock>>>,
     pool: Mutex<VecDeque<MemoryBlock>>,
 }
@@ -37,7 +37,7 @@ struct Dummy;
 export!(SharedImpl);
 
 use std::{
-    alloc::Layout,
+    // alloc::Layout,
     collections::VecDeque,
     future::IntoFuture,
     sync::{Arc, Mutex},
@@ -207,7 +207,7 @@ impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
 #[cfg(feature = "symmetric")]
 type MemoryType = Arc<MyMemory>;
 #[cfg(feature = "symmetric")]
-type HandleType = usize;
+type _HandleType = usize;
 
 #[cfg(feature = "canonical")]
 type MemoryType = exchange::MemoryBlock;
@@ -252,8 +252,8 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
             // }));
         }
         Arc::new(MyPublisher {
-            elements: elements,
-            element_size: element_size,
+            _elements: elements,
+            _element_size: element_size,
             subscribers: Mutex::new(Vec::new()),
             pool: Mutex::new(VecDeque::from(mem)),
         })
@@ -281,6 +281,12 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     }
     fn subscribers(&self) -> pub_sub::Subscriber {
         pub_sub::Subscriber::new(Clone::clone(self))
+    }
+
+    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
+        let s = wit_stream::new::<MemoryBlock>();
+        self.subscribers.lock().unwrap().push(s.0);
+        s.1
     }
 
     // fn clone(original: pub_sub::PublisherBorrow<'_>) -> pub_sub::Publisher {

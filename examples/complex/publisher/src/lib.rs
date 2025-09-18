@@ -14,8 +14,10 @@ wit_bindgen::generate!({
 
 struct MyWorld;
 
+// used by generate
+#[allow(unused_imports)]
 mod pub_sub {
-    pub use wasm_shm::Subscriber;
+    pub(crate) use wasm_shm::Subscriber;
 }
 
 const NUMBERS: [&str; 10] = [
@@ -48,7 +50,7 @@ use wasi_clocks::monotonic_clock::wait_for;
 impl exports::test::complex::sender::Guest for MyWorld {
     fn start() -> wasm_shm::Subscriber {
         let memsize = wasm_shm::MemoryBlock::optimum_size(1, 1024);
-        let alloc = if memsize > 0 {
+        let _alloc = if memsize > 0 {
             let area = unsafe {
                 std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
             };

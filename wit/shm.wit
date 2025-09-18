@@ -70,6 +70,7 @@ interface exchange {
 
 interface pub-sub {
     use exchange.{memory-block, bytes};
+    // a factory for streams
     resource subscriber {
         /// subscribers receive memory handles
         get-stream: func() -> stream<memory-block>;
