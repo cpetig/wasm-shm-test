@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "anyhow"
-version = "1.0.99"
+version = "1.0.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0674a1ddeecb70197781e945de4b3b8ffb61fa939a5597bcf48503737663100"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
 name = "bitflags"
@@ -21,6 +21,7 @@ dependencies = [
  "flat",
  "futures",
  "mini-bindgen",
+ "publisher",
  "symmetric_executor",
  "symmetric_stream",
  "wasi-clocks-symmetric",
@@ -146,6 +147,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -159,12 +166,12 @@ checksum = "25a2bc672d1148e28034f176e01fffebb08b35768468cc954630da77a1449005"
 
 [[package]]
 name = "indexmap"
-version = "2.11.3"
+version = "2.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92119844f513ffa41556430369ab02c295a3578af21cf945caa3e9e0c2481ac3"
+checksum = "4b0f83760fb341a774ed326568e19f5a863af4a952def8c39f9ab92fd95b88e5"
 dependencies = [
  "equivalent",
- "hashbrown",
+ "hashbrown 0.16.0",
  "serde",
  "serde_core",
 ]
@@ -183,9 +190,9 @@ checksum = "09edd9e8b54e49e587e4f6295a7d29c3ea94d469cb40ab8ca70b288248a81db2"
 
 [[package]]
 name = "libc"
-version = "0.2.175"
+version = "0.2.176"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a82ae493e598baaea5209805c49bbf2ea7de956d50d7da0da1164f9c6d28543"
+checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 
 [[package]]
 name = "log"
@@ -195,9 +202,9 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "memchr"
-version = "2.7.5"
+version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
+checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "mini-bindgen"
@@ -262,9 +269,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
+checksum = "ce25767e7b499d1b604768e7cde645d14cc8584231ea6b295e9c9eb22c02e1d1"
 dependencies = [
  "proc-macro2",
 ]
@@ -289,27 +296,27 @@ checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
 
 [[package]]
 name = "serde"
-version = "1.0.225"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd6c24dee235d0da097043389623fb913daddf92c76e9f5a1db88607a0bcbd1d"
+checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
 ]
 
 [[package]]
 name = "serde_core"
-version = "1.0.225"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "659356f9a0cb1e529b24c01e43ad2bdf520ec4ceaf83047b83ddcc2251f96383"
+checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.225"
+version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea936adf78b1f766949a4977b91d2f5595825bd6ec079aa9543ad2685fc4516"
+checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -371,7 +378,7 @@ dependencies = [
 name = "symmetric_stream"
 version = "0.1.0"
 dependencies = [
- "mini-bindgen",
+ "dummy-rt",
  "symmetric_executor",
 ]
 
@@ -417,7 +424,7 @@ dependencies = [
 [[package]]
 name = "wasm-encoder"
 version = "0.239.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#cfd914000f20f7f54b10d156f29f400639d65225"
 dependencies = [
  "leb128fmt",
  "wasmparser",
@@ -426,7 +433,7 @@ dependencies = [
 [[package]]
 name = "wasm-metadata"
 version = "0.239.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#cfd914000f20f7f54b10d156f29f400639d65225"
 dependencies = [
  "anyhow",
  "indexmap",
@@ -445,10 +452,10 @@ dependencies = [
 [[package]]
 name = "wasmparser"
 version = "0.239.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#cfd914000f20f7f54b10d156f29f400639d65225"
 dependencies = [
  "bitflags",
- "hashbrown",
+ "hashbrown 0.15.5",
  "indexmap",
  "semver",
 ]
@@ -514,7 +521,7 @@ dependencies = [
 [[package]]
 name = "wit-component"
 version = "0.239.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#cfd914000f20f7f54b10d156f29f400639d65225"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -532,7 +539,7 @@ dependencies = [
 [[package]]
 name = "wit-parser"
 version = "0.239.0"
-source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
+source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#cfd914000f20f7f54b10d156f29f400639d65225"
 dependencies = [
  "anyhow",
  "id-arena",

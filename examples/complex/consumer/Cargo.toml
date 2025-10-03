@@ -1,16 +1,16 @@
 [package]
 name = "consumer"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-wasm-shm = { path = "../../../pub-sub/rust-client", default-features = false }
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
-symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
-symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
-wasi-clocks-symmetric = { path = "../../../pub-sub/wasi-clocks", optional=true }
-futures = "0.3.31"
-flat = { version = "0.1.0", path = "../../../flat-types-rust" }
+wasm-shm = { workspace = true }
+wit-bindgen = { workspace = true }
+symmetric_executor = { workspace = true, optional=true }
+symmetric_stream = { workspace = true, optional=true }
+wasi-clocks-symmetric = { workspace = true, optional=true }
+futures.workspace = true
+flat = { workspace = true }
 publisher_link = { package = "publisher", path = "../publisher", optional = true, default-features = false }
 
 [lib]
