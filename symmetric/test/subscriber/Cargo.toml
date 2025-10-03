@@ -1,16 +1,16 @@
 [package]
 name = "subscriber"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
 publisher = { path = "../publisher", default-features = false }
 wasm-shm = { path = "../../rust-client", default-features = false }
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
-symmetric_executor = { path = "../../../wit-bindgen/crates/symmetric_executor", optional=true }
-symmetric_stream = { path = "../../../wit-bindgen/crates/symmetric_executor/symmetric_stream", optional=true }
+wit-bindgen = { workspace = true }
+symmetric_executor = { workspace = true, optional=true }
+symmetric_stream = { workspace = true, optional=true }
 wasi-clocks-symmetric = { path = "../../wasi-clocks", optional=true }
-futures = "0.3.31"
+futures.workspace = true
 
 [features]
 default = [ "symmetric" ]

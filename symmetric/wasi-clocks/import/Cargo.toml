@@ -1,10 +1,10 @@
 [package]
 name = "wasi-clocks"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-wit-bindgen = { path = "../../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
+wit-bindgen = { workspace = true }
 
 [features]
 default = [ "symmetric" ]

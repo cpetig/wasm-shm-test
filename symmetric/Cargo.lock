@@ -230,6 +230,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "publisher"
+version = "0.1.0"
+dependencies = [
+ "mini-bindgen",
+ "symmetric_executor",
+ "wasi-clocks",
+ "wasm-shm",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -305,6 +315,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2ae44ef20feb57a68b23d846850f861394c2e02dc425a50098ae8c90267589"
 
 [[package]]
+name = "subscriber"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "mini-bindgen",
+ "publisher",
+ "symmetric_executor",
+ "symmetric_stream",
+ "wasi-clocks-symmetric",
+ "wasm-shm",
+]
+
+[[package]]
 name = "symmetric-sharedmem"
 version = "0.1.0"
 dependencies = [
@@ -355,6 +378,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
+name = "wasi-clocks"
+version = "0.1.0"
+dependencies = [
+ "mini-bindgen",
+]
+
+[[package]]
+name = "wasi-clocks-symmetric"
+version = "0.1.0"
+dependencies = [
+ "mini-bindgen",
+ "symmetric_executor",
+ "symmetric_stream",
+]
+
+[[package]]
 name = "wasm-encoder"
 version = "0.239.0"
 source = "git+https://github.com/cpetig/wasm-tools?branch=symmetric#2161c17b65006ef269eaafd83b9721ec8179c8b4"
@@ -372,6 +411,14 @@ dependencies = [
  "indexmap",
  "wasm-encoder",
  "wasmparser",
+]
+
+[[package]]
+name = "wasm-shm"
+version = "0.1.0"
+dependencies = [
+ "mini-bindgen",
+ "symmetric-sharedmem",
 ]
 
 [[package]]

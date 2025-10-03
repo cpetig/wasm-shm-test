@@ -1,11 +1,11 @@
 [package]
 name = "wasm-shm"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-symmetric-sharedmem = { version = "0.1.0", path = "..", optional = true }
-wit-bindgen = { path = "../../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features=false, features=["async"] }
+symmetric-sharedmem = { path = "..", optional = true }
+wit-bindgen = { workspace = true }
 
 [features]
 default = [ "symmetric" ]
