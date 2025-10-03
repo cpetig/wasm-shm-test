@@ -61,7 +61,12 @@ interface exchange {
         // the area should be at least "minimum-size" big
         add-storage: static func(buffer: memory-area) -> result<_, error>;
 
+        // call on parent (which could still be attached) to hand out sub-regions,
+        // typically used by shm management components
+        create-partition: func(start: bytes, size: bytes, mode: attach-options);
+
         // optional: create a buffer local to this linear memory
+        // likely superceded by create-partition (which works on wasm as well)
         create-local: static func(buffer: memory-area) -> memory-block;
 
         // the CM implicitely creates a destructor called "drop"
