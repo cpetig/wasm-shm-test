@@ -190,6 +190,9 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
     fn clone(&self) -> MemoryBlock {
         MemoryBlock::new(Clone::clone(self))
     }
+    fn create_partition(&self, _start: Bytes, _size: Bytes, _mode: AttachOptions) {
+        todo!()
+    }
 }
 
 impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
