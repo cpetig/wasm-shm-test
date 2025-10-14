@@ -7,4 +7,4 @@ pub use imports_symmetric as imports;
 #[cfg(feature = "canonical")]
 pub use imports_wasm as imports;
 
-pub use imports::wasi::clocks::{monotonic_clock, wall_clock};
+pub use imports::wasi::clocks::{monotonic_clock, system_clock};
