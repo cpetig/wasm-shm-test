@@ -431,6 +431,7 @@ name = "wit-bindgen"
 version = "0.46.0"
 dependencies = [
  "bitflags",
+ "futures",
  "wit-bindgen-rust-macro",
 ]
 

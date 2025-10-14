@@ -5,3 +5,8 @@ edition.workspace = true
 
 [dependencies]
 wit-bindgen = { workspace = true }
+
+[features]
+default = [ "canonical" ]
+symmetric = [ "wit-bindgen/symmetric" ]
+canonical = [ "wit-bindgen/canonical" ]
