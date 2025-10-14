@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["complex/consumer", "complex/publisher", "complex/starter"]
+members = ["complex/consumer", "complex/publisher", "complex/starter", "minimal/main", "minimal/impl"]
 
 [workspace.package]
 version = "0.1.0"

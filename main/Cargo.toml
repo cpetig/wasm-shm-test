@@ -1,7 +1,0 @@
-[package]
-name = "main"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-wit-bindgen = { path = "../wit-bindgen/crates/guest-rust" }

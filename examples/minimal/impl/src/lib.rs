@@ -4,7 +4,7 @@ use exports::test::shm::image::Guest;
 use test::shm::exchange::{Address, AttachOptions, MemoryBlock, MemoryArea};
 
 wit_bindgen::generate!({
-    path: "../wit/shm.wit",
+    path: "../../../wit/shm.wit",
     world: "plugin"
 });
 

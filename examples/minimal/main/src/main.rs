@@ -1,7 +1,7 @@
 use test::shm::exchange::{Address, AttachOptions, MemoryBlock, MemoryArea};
 
 wit_bindgen::generate!({
-    path: "../wit/shm.wit",
+    path: "../../../wit/shm.wit",
     world: "main"
 });
 

@@ -45,6 +45,8 @@ In addition there are some convenience additions:
 
 ## Minimal example
 
+See `examples/minimal/`
+
 The `main` component allocates a shared buffer, passes it to a reactor (`impl`) 
 which attaches the buffer, increments the specified byte and returns. Then
 the main component attaches the buffer and verifies the requested increments.
