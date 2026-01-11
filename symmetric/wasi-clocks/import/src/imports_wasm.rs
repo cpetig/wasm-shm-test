@@ -46,14 +46,14 @@ pub mod wasi {
             pub fn now() -> Mark {
                 unsafe {
                     #[link(
-                        wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16"
+                        wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06"
                     )]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
                         #[cfg_attr(target_arch = "wasm32", link_name = "now")]
-                        fn wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00now() -> i64;
+                        fn wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00now() -> i64;
                     }
-                    let ret = wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00now();
+                    let ret = wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00now();
                     ret as u64
                 }
             }
@@ -64,14 +64,14 @@ pub mod wasi {
             pub fn get_resolution() -> Duration {
                 unsafe {
                     #[link(
-                        wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16"
+                        wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06"
                     )]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
                         #[cfg_attr(target_arch = "wasm32", link_name = "get-resolution")]
-                        fn wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution() -> i64;
+                        fn wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution() -> i64;
                     }
-                    let ret = wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution();
+                    let ret = wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution();
                     ret as u64
                 }
             }
@@ -103,7 +103,7 @@ pub mod wasi {
                             _results: *mut u8,
                         ) -> u32 {
                             #[link(
-                                wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16"
+                                wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06"
                             )]
                             unsafe extern "C" {
                                 #[allow(non_snake_case)]
@@ -171,7 +171,7 @@ pub mod wasi {
                             _results: *mut u8,
                         ) -> u32 {
                             #[link(
-                                wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16"
+                                wasm_import_module = "wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06"
                             )]
                             unsafe extern "C" {
                                 #[allow(non_snake_case)]
@@ -276,16 +276,16 @@ pub mod wasi {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[link(
-                        wasm_import_module = "wasi:clocks/system-clock@0.3.0-rc-2025-09-16"
+                        wasm_import_module = "wasi:clocks/system-clock@0.3.0-rc-2026-01-06"
                     )]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
                         #[cfg_attr(target_arch = "wasm32", link_name = "now")]
-                        fn wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00now(
+                        fn wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00now(
                             _: *mut u8,
                         );
                     }
-                    wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00now(ptr0);
+                    wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00now(ptr0);
                     let l1 = *ptr0.add(0).cast::<i64>();
                     let l2 = *ptr0.add(8).cast::<i32>();
                     let result3 = Instant {
@@ -302,14 +302,14 @@ pub mod wasi {
             pub fn get_resolution() -> Duration {
                 unsafe {
                     #[link(
-                        wasm_import_module = "wasi:clocks/system-clock@0.3.0-rc-2025-09-16"
+                        wasm_import_module = "wasi:clocks/system-clock@0.3.0-rc-2026-01-06"
                     )]
                     unsafe extern "C" {
                         #[allow(non_snake_case)]
                         #[cfg_attr(target_arch = "wasm32", link_name = "get-resolution")]
-                        fn wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution() -> i64;
+                        fn wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution() -> i64;
                     }
-                    let ret = wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution();
+                    let ret = wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution();
                     ret as u64
                 }
             }
@@ -346,22 +346,22 @@ mod _rt {
 #[rustfmt::skip]
 #[cfg(target_arch = "wasm32")]
 #[unsafe(
-    link_section = "component-type:wit-bindgen:0.46.0:wasi:clocks@0.3.0-rc-2025-09-16:imports:encoded world"
+    link_section = "component-type:wit-bindgen:0.46.0:wasi:clocks@0.3.0-rc-2026-01-06:imports:encoded world"
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
 pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 587] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x03\x01A\x02\x01\
 A\x07\x01B\x02\x01w\x04\0\x08duration\x03\0\0\x03\0%wasi:clocks/types@0.3.0-rc-2\
-025-09-16\x05\0\x02\x03\0\0\x08duration\x01B\x0c\x02\x03\x02\x01\x01\x04\0\x08du\
+026-01-06\x05\0\x02\x03\0\0\x08duration\x01B\x0c\x02\x03\x02\x01\x01\x04\0\x08du\
 ration\x03\0\0\x01w\x04\0\x04mark\x03\0\x02\x01@\0\0\x03\x04\0\x03now\x01\x04\x01\
 @\0\0\x01\x04\0\x0eget-resolution\x01\x05\x01@\x01\x04when\x03\x01\0\x04\0\x11[a\
 sync]wait-until\x01\x06\x01@\x01\x08how-long\x01\x01\0\x04\0\x0f[async]wait-for\x01\
-\x07\x03\0/wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16\x05\x02\x01B\x08\x02\x03\
+\x07\x03\0/wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06\x05\x02\x01B\x08\x02\x03\
 \x02\x01\x01\x04\0\x08duration\x03\0\0\x01r\x02\x07secondsx\x0bnanosecondsy\x04\0\
 \x07instant\x03\0\x02\x01@\0\0\x03\x04\0\x03now\x01\x04\x01@\0\0\x01\x04\0\x0ege\
-t-resolution\x01\x05\x03\0,wasi:clocks/system-clock@0.3.0-rc-2025-09-16\x05\x03\x04\
-\0'wasi:clocks/imports@0.3.0-rc-2025-09-16\x04\0\x0b\x0d\x01\0\x07imports\x03\0\0\
+t-resolution\x01\x05\x03\0,wasi:clocks/system-clock@0.3.0-rc-2026-01-06\x05\x03\x04\
+\0'wasi:clocks/imports@0.3.0-rc-2026-01-06\x04\0\x0b\x0d\x01\0\x07imports\x03\0\0\
 \0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.240.0\x10wit-bind\
 gen-rust\x060.46.0";
 #[inline(never)]

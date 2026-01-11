@@ -107,35 +107,35 @@ pub mod exports {
                     async fn wait_for(how_long: Duration) -> ();
                 }
                 #[doc(hidden)]
-                macro_rules! __export_wasi_clocks_monotonic_clock_0_3_0_rc_2025_09_16_cabi {
+                macro_rules! __export_wasi_clocks_monotonic_clock_0_3_0_rc_2026_01_06_cabi {
                     ($ty:ident with_types_in $($path_to_types:tt)*) => {
                         const _ : () = { #[cfg_attr(target_arch = "wasm32", export_name =
                         "now")] #[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
                         #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00now()
+                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00now()
                         -> i64 { unsafe { $($path_to_types)*:: _export_now_cabi::<$ty >
                         () } } #[cfg_attr(target_arch = "wasm32", export_name =
                         "get-resolution")] #[cfg_attr(not(target_arch = "wasm32"),
                         no_mangle)] #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution()
+                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution()
                         -> i64 { unsafe { $($path_to_types)*::
                         _export_get_resolution_cabi::<$ty > () } } #[cfg_attr(target_arch
                         = "wasm32", export_name = "[async]wait-until")]
                         #[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
                         #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00X5BasyncX5Dwait_until(arg0
+                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00X5BasyncX5Dwait_until(arg0
                         : i64,) -> * mut u8 { unsafe { $($path_to_types)*::
                         _export_async_wait_until_cabi::<$ty > (arg0) } }
                         #[cfg_attr(target_arch = "wasm32", export_name =
                         "[async]wait-for")] #[cfg_attr(not(target_arch = "wasm32"),
                         no_mangle)] #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2025_09_16X00X5BasyncX5Dwait_for(arg0
+                        wasiX3AclocksX2Fmonotonic_clockX400X2E3X2E0_rc_2026_01_06X00X5BasyncX5Dwait_for(arg0
                         : i64,) -> * mut u8 { unsafe { $($path_to_types)*::
                         _export_async_wait_for_cabi::<$ty > (arg0) } } };
                     };
                 }
                 #[doc(hidden)]
-                pub(crate) use __export_wasi_clocks_monotonic_clock_0_3_0_rc_2025_09_16_cabi;
+                pub(crate) use __export_wasi_clocks_monotonic_clock_0_3_0_rc_2026_01_06_cabi;
             }
             /// WASI System Clock is a clock API intended to let users query the current
             /// time. The clock is not necessarily monotonic as it may be reset.
@@ -222,24 +222,24 @@ pub mod exports {
                     fn get_resolution() -> Duration;
                 }
                 #[doc(hidden)]
-                macro_rules! __export_wasi_clocks_system_clock_0_3_0_rc_2025_09_16_cabi {
+                macro_rules! __export_wasi_clocks_system_clock_0_3_0_rc_2026_01_06_cabi {
                     ($ty:ident with_types_in $($path_to_types:tt)*) => {
                         const _ : () = { #[cfg_attr(target_arch = "wasm32", export_name =
                         "now")] #[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
                         #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00now(arg0
+                        wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00now(arg0
                         : * mut u8,) { unsafe { $($path_to_types)*::
                         _export_now_cabi::<$ty > (arg0) } } #[cfg_attr(target_arch =
                         "wasm32", export_name = "get-resolution")]
                         #[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
                         #[allow(non_snake_case)] unsafe extern "C" fn
-                        wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2025_09_16X00get_resolution()
+                        wasiX3AclocksX2Fsystem_clockX400X2E3X2E0_rc_2026_01_06X00get_resolution()
                         -> i64 { unsafe { $($path_to_types)*::
                         _export_get_resolution_cabi::<$ty > () } } };
                     };
                 }
                 #[doc(hidden)]
-                pub(crate) use __export_wasi_clocks_system_clock_0_3_0_rc_2025_09_16_cabi;
+                pub(crate) use __export_wasi_clocks_system_clock_0_3_0_rc_2026_01_06_cabi;
             }
         }
     }
@@ -358,10 +358,10 @@ macro_rules! __export_exports_impl {
     };
     ($ty:ident with_types_in $($path_to_types_root:tt)*) => {
         $($path_to_types_root)*::
-        exports::wasi::clocks::monotonic_clock::__export_wasi_clocks_monotonic_clock_0_3_0_rc_2025_09_16_cabi!($ty
+        exports::wasi::clocks::monotonic_clock::__export_wasi_clocks_monotonic_clock_0_3_0_rc_2026_01_06_cabi!($ty
         with_types_in $($path_to_types_root)*:: exports::wasi::clocks::monotonic_clock);
         $($path_to_types_root)*::
-        exports::wasi::clocks::system_clock::__export_wasi_clocks_system_clock_0_3_0_rc_2025_09_16_cabi!($ty
+        exports::wasi::clocks::system_clock::__export_wasi_clocks_system_clock_0_3_0_rc_2026_01_06_cabi!($ty
         with_types_in $($path_to_types_root)*:: exports::wasi::clocks::system_clock);
     };
 }
@@ -370,22 +370,22 @@ pub(crate) use __export_exports_impl as export;
 #[rustfmt::skip]
 #[cfg(target_arch = "wasm32")]
 #[unsafe(
-    link_section = "component-type:wit-bindgen:0.46.0:wasi:clocks@0.3.0-rc-2025-09-16:exports:encoded world"
+    link_section = "component-type:wit-bindgen:0.46.0:wasi:clocks@0.3.0-rc-2026-01-06:exports:encoded world"
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
 pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 587] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x03\x01A\x02\x01\
 A\x07\x01B\x02\x01w\x04\0\x08duration\x03\0\0\x03\0%wasi:clocks/types@0.3.0-rc-2\
-025-09-16\x05\0\x02\x03\0\0\x08duration\x01B\x0c\x02\x03\x02\x01\x01\x04\0\x08du\
+026-01-06\x05\0\x02\x03\0\0\x08duration\x01B\x0c\x02\x03\x02\x01\x01\x04\0\x08du\
 ration\x03\0\0\x01w\x04\0\x04mark\x03\0\x02\x01@\0\0\x03\x04\0\x03now\x01\x04\x01\
 @\0\0\x01\x04\0\x0eget-resolution\x01\x05\x01@\x01\x04when\x03\x01\0\x04\0\x11[a\
 sync]wait-until\x01\x06\x01@\x01\x08how-long\x01\x01\0\x04\0\x0f[async]wait-for\x01\
-\x07\x04\0/wasi:clocks/monotonic-clock@0.3.0-rc-2025-09-16\x05\x02\x01B\x08\x02\x03\
+\x07\x04\0/wasi:clocks/monotonic-clock@0.3.0-rc-2026-01-06\x05\x02\x01B\x08\x02\x03\
 \x02\x01\x01\x04\0\x08duration\x03\0\0\x01r\x02\x07secondsx\x0bnanosecondsy\x04\0\
 \x07instant\x03\0\x02\x01@\0\0\x03\x04\0\x03now\x01\x04\x01@\0\0\x01\x04\0\x0ege\
-t-resolution\x01\x05\x04\0,wasi:clocks/system-clock@0.3.0-rc-2025-09-16\x05\x03\x04\
-\0'wasi:clocks/exports@0.3.0-rc-2025-09-16\x04\0\x0b\x0d\x01\0\x07exports\x03\0\0\
+t-resolution\x01\x05\x04\0,wasi:clocks/system-clock@0.3.0-rc-2026-01-06\x05\x03\x04\
+\0'wasi:clocks/exports@0.3.0-rc-2026-01-06\x04\0\x0b\x0d\x01\0\x07exports\x03\0\0\
 \0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.240.0\x10wit-bind\
 gen-rust\x060.46.0";
 #[inline(never)]

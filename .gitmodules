@@ -1,6 +1,3 @@
-[submodule "symmetric/wasi-clocks/wasi-clocks"]
-	path = symmetric/wasi-clocks/wasi-clocks
-	url = https://github.com/WebAssembly/wasi-clocks.git
 [submodule "wit-bindgen"]
 	path = wit-bindgen
 	url = https://github.com/cpetig/wit-bindgen.git
@@ -8,3 +5,6 @@
 [submodule "flat-types-rust"]
 	path = flat-types-rust
 	url = https://github.com/cpetig/flat-types-rust
+[submodule "symmetric/wasi-clocks/WASI"]
+	path = symmetric/wasi-clocks/WASI
+	url = https://github.com/WebAssembly/WASI.git
