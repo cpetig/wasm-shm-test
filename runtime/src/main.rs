@@ -15,8 +15,8 @@ wasmtime::component::bindgen!({
     include_generated_code_from_file: true,
     debug: true,
     with: {
-        "test:shm/exchange/memory-block": MyMemory,
-        "test:shm/exchange/address": MyAddress,
+        "test:shm/exchange.memory-block": MyMemory,
+        "test:shm/exchange.address": MyAddress,
     }
 });
 
@@ -122,10 +122,10 @@ mod myshm {
     use wasmtime::component::Lower;
     use wasmtime::{
         component::{
-            ComponentType, Lift, Resource, ResourceType,
             __internal::{
                 CanonicalAbiInfo, InstanceType, InterfaceType, LiftContext, LowerContext,
             },
+            ComponentType, Lift, Resource, ResourceType,
         },
         StoreContextMut,
     };
@@ -141,7 +141,7 @@ mod myshm {
     unsafe impl ComponentType for WrappedMemory {
         type Lower = <Resource<MyMemory> as ComponentType>::Lower;
         const ABI: CanonicalAbiInfo = <Resource<MyMemory> as ComponentType>::ABI;
-        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
+        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> wasmtime::Result<()> {
             <Resource<MyMemory> as ComponentType>::typecheck(ty, types)
         }
     }
@@ -151,7 +151,7 @@ mod myshm {
             cx: &mut LiftContext<'_>,
             ty: InterfaceType,
             src: &Self::Lower,
-        ) -> anyhow::Result<Self> {
+        ) -> wasmtime::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
             <Resource<MyMemory> as Lift>::linear_lift_from_flat(cx, ty, src).map(|a| {
                 WrappedMemory {
@@ -165,7 +165,7 @@ mod myshm {
             cx: &mut LiftContext<'_>,
             ty: InterfaceType,
             bytes: &[u8],
-        ) -> anyhow::Result<Self> {
+        ) -> wasmtime::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
             <Resource<MyMemory> as Lift>::linear_lift_from_memory(cx, ty, bytes).map(|a| {
                 WrappedMemory {
@@ -193,7 +193,7 @@ mod myshm {
     unsafe impl ComponentType for WrappedArea {
         type Lower = AreaLower;
         const ABI: CanonicalAbiInfo = <MemoryArea as ComponentType>::ABI;
-        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> anyhow::Result<()> {
+        fn typecheck(ty: &InterfaceType, types: &InstanceType<'_>) -> wasmtime::Result<()> {
             <MemoryArea as ComponentType>::typecheck(ty, types)
         }
     }
@@ -203,7 +203,7 @@ mod myshm {
             cx: &mut LiftContext<'_>,
             _ty: InterfaceType,
             src: &Self::Lower,
-        ) -> anyhow::Result<Self> {
+        ) -> wasmtime::Result<Self> {
             // if !cx.options.has_memory() {
             //     dbg!(cx.instance_mut().component().get_export(None, "memory"));
             //     anyhow::bail!("WrappedArea without memory")
@@ -222,7 +222,7 @@ mod myshm {
             cx: &mut LiftContext<'_>,
             _ty: InterfaceType,
             bytes: &[u8],
-        ) -> anyhow::Result<Self> {
+        ) -> wasmtime::Result<Self> {
             let linear = cx.memory().as_ptr().cast_mut();
             let addr = u32::linear_lift_from_memory(cx, InterfaceType::U32, &bytes[0..4])?;
             let size = u32::linear_lift_from_memory(cx, InterfaceType::U32, &bytes[4..8])?;
@@ -240,7 +240,7 @@ mod myshm {
             _cx: &mut LowerContext<'_, T>,
             _ty: InterfaceType,
             _dst: &mut std::mem::MaybeUninit<Self::Lower>,
-        ) -> anyhow::Result<()> {
+        ) -> wasmtime::Result<()> {
             todo!()
         }
 
@@ -249,7 +249,7 @@ mod myshm {
             cx: &mut LowerContext<'_, T>,
             _ty: InterfaceType,
             offset: usize,
-        ) -> anyhow::Result<()> {
+        ) -> wasmtime::Result<()> {
             u32::linear_lower_to_memory(&self.addr, cx, InterfaceType::U32, offset)?;
             u32::linear_lower_to_memory(&self.size, cx, InterfaceType::U32, offset + 4)?;
             Ok(())
@@ -448,7 +448,7 @@ fn main() -> anyhow::Result<()> {
     let future = async move {
         let mut config = Config::new();
         config
-            .async_support(true)
+            //.async_support(true)
             .wasm_component_model(true)
             .wasm_component_model_async(true);
 
