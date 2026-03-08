@@ -18,6 +18,6 @@ wasi-clocks = { workspace = true }
 crate-type = [ "rlib", "cdylib" ]
 
 [features]
-default = [ "symmetric" ]
+default = [ "canonical" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric", "wasi-clocks/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical", "wasi-clocks/canonical" ]

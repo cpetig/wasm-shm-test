@@ -17,7 +17,7 @@ publisher_link = { package = "publisher", path = "../publisher", optional = true
 crate-type = [ "cdylib" ]
 
 [features]
-default = [ "symmetric" ]
+default = [ "canonical" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
 combined = [ "canonical", "publisher_link/canonical" ]

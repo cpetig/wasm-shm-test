@@ -7,6 +7,6 @@ edition = "2021"
 anyhow = "1.0.93"
 libc = "0.2.166"
 tokio = "1.47.1"
-wasmtime = { git = "https://github.com/bytecodealliance/wasmtime.git", features = ["component-model-async"] }
-wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime.git", features = ["p3"] }
-wasmtime-wasi-io = { git = "https://github.com/bytecodealliance/wasmtime.git" }
+wasmtime = "42"
+wasmtime-wasi = { version = "42", features = ["p3"] }
+wasmtime-wasi-io = "42"

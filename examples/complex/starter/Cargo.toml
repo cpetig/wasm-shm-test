@@ -13,6 +13,6 @@ symmetric_stream = { workspace = true, optional=true }
 wasi-clocks-symmetric = { workspace = true, optional=true }
 
 [features]
-default = [ "symmetric" ]
+default = [ "canonical" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric", "publisher/symmetric", "consumer/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
