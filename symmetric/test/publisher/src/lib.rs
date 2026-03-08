@@ -35,7 +35,7 @@ use wit_bindgen::rt;
 
 pub fn start() -> wasm_shm::Subscriber {
     let memsize = wasm_shm::MemoryBlock::optimum_size(5, 256);
-    let alloc = if memsize > 0 {
+    let _alloc = if memsize > 0 {
         let area = unsafe {
             std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
         };
