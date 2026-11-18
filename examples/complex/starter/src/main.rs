@@ -1,7 +1,7 @@
 wit_bindgen::generate!({
     path: "../wit/",
     world: "starter",
-    debug: true,
+    debug: "target/wit-bindgen-debug",
     with: {
         "test:shm/exchange": pub_sub,
         "test:shm/pub-sub": pub_sub,

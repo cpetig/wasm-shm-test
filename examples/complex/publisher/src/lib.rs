@@ -4,7 +4,7 @@ use wit_bindgen::rt;
 wit_bindgen::generate!({
     path: "../wit/",
     world: "send-world",
-    debug: true,
+    debug: "target/wit-bindgen-debug",
     with: {
         "test:shm/pub-sub/subscriber": wasm_shm::Subscriber,
         "test:shm/exchange": pub_sub,
