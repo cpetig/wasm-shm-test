@@ -21,3 +21,6 @@ default = [ "symmetric" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
 combined = [ "canonical", "publisher_link/canonical" ]
+
+[build-dependencies]
+symmetric-link-search = { workspace = true }

@@ -16,3 +16,6 @@ futures.workspace = true
 default = [ "symmetric" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric", "publisher/symmetric" ]
 canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical", "publisher/canonical" ]
+
+[build-dependencies]
+symmetric-link-search = { workspace = true }

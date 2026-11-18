@@ -1,12 +1,15 @@
 [workspace]
 resolver = "3"
 members = ["complex/consumer", "complex/publisher", "complex/starter", "minimal/main", "minimal/impl"]
+# the minimal examples default to canonical, the complex ones to symmetric: never build both in one go
+default-members = ["complex/consumer", "complex/publisher", "complex/starter"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
+symmetric-link-search = { path = "../wit-bindgen/crates/symmetric_executor/link-search" }
 wasm-shm = { path = "../pub-sub/rust-client", default-features = false }
 wit-bindgen = { path = "../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features = false, features = [ "async" ] }
 symmetric_executor = { path = "../wit-bindgen/crates/symmetric_executor" }

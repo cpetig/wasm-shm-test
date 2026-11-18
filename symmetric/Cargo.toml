@@ -7,6 +7,7 @@ edition = "2021"
 version = "0.1.0"
 
 [workspace.dependencies]
+symmetric-link-search = { path = "../wit-bindgen/crates/symmetric_executor/link-search" }
 symmetric_executor = { path = "../wit-bindgen/crates/symmetric_executor" }
 symmetric_stream = { path = "../wit-bindgen/crates/symmetric_executor/symmetric_stream" }
 wit-bindgen = { path = "../wit-bindgen/crates/symmetric_executor/bindgen", package = "mini-bindgen", default-features=false, features=["async"] }
@@ -30,3 +31,6 @@ crate-type = [ "cdylib" ]
 default = [ "symmetric" ]
 symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "wit-bindgen/symmetric" ]
 canonical = [ "wit-bindgen/canonical" ]
+
+[build-dependencies]
+symmetric-link-search = { workspace = true }

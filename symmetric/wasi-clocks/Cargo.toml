@@ -15,3 +15,6 @@ crate-type = ["cdylib"]
 default = [ "symmetric" ]
 symmetric = [ "wit-bindgen/symmetric", "dep:symmetric_executor", "dep:symmetric_stream" ]
 canonical = [ "wit-bindgen/canonical" ]
+
+[build-dependencies]
+symmetric-link-search = { workspace = true }

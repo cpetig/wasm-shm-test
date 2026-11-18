@@ -313,6 +313,7 @@ dependencies = [
  "futures",
  "mini-bindgen",
  "publisher",
+ "symmetric-link-search",
  "symmetric_executor",
  "symmetric_stream",
  "wasi-clocks-symmetric",
@@ -320,11 +321,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "symmetric-link-search"
+version = "0.1.0"
+
+[[package]]
 name = "symmetric-sharedmem"
 version = "0.1.0"
 dependencies = [
  "futures",
  "mini-bindgen",
+ "symmetric-link-search",
  "symmetric_executor",
  "symmetric_stream",
 ]
@@ -344,6 +350,7 @@ version = "0.1.0"
 dependencies = [
  "dummy-rt",
  "libc",
+ "symmetric-link-search",
  "symmetric_executor",
 ]
 
@@ -376,6 +383,7 @@ name = "wasi-clocks-symmetric"
 version = "0.1.0"
 dependencies = [
  "mini-bindgen",
+ "symmetric-link-search",
  "symmetric_executor",
  "symmetric_stream",
 ]
