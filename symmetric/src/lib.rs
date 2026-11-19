@@ -2,14 +2,12 @@
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl",
-    debug: "target/wit-bindgen-debug",
 });
 //    symmetric: true,
 #[cfg(feature = "canonical")]
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl2",
-    debug: "target/wit-bindgen-debug",
 });
 
 struct SharedImpl;

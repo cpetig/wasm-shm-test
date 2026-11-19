@@ -3,7 +3,6 @@ use wasm_shm::AttachOptions;
 wit_bindgen::generate!({
     path: "../wit/",
     world: "rec-world",
-    debug: "target/wit-bindgen-debug",
     with: {
         "test:shm/exchange": pub_sub,
         "test:shm/pub-sub": pub_sub,
