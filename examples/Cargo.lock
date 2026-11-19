@@ -230,6 +230,7 @@ name = "mini-bindgen"
 version = "0.1.0"
 dependencies = [
  "dummy-rt",
+ "symmetric-link-search",
  "wit-bindgen",
  "wit-bindgen-rust-macro",
  "wit-bindgen-symmetric-rt",
@@ -361,6 +362,10 @@ dependencies = [
 [[package]]
 name = "symmetric-link-search"
 version = "0.1.0"
+dependencies = [
+ "symmetric_executor",
+ "symmetric_stream",
+]
 
 [[package]]
 name = "symmetric-sharedmem"
@@ -388,7 +393,6 @@ version = "0.1.0"
 dependencies = [
  "dummy-rt",
  "libc",
- "symmetric-link-search",
  "symmetric_executor",
 ]
 
@@ -451,6 +455,7 @@ name = "wasm-shm"
 version = "0.1.0"
 dependencies = [
  "mini-bindgen",
+ "symmetric-link-search",
  "symmetric-sharedmem",
 ]
 

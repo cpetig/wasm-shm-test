@@ -19,3 +19,7 @@ canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
 
 [build-dependencies]
 symmetric-link-search = { workspace = true }
+# built first, so that the build script finds the library
+wasi-clocks-symmetric = { workspace = true, optional = true }
+publisher = { path = "../publisher", default-features = false, optional = true }
+consumer = { path = "../consumer", default-features = false, optional = true }

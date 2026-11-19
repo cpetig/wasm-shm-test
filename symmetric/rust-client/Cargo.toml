@@ -7,6 +7,11 @@ edition.workspace = true
 symmetric-sharedmem = { path = "..", optional = true }
 wit-bindgen = { workspace = true }
 
+[build-dependencies]
+symmetric-link-search = { workspace = true }
+# built first, so that the build script finds the library
+symmetric-sharedmem = { path = "..", optional = true }
+
 [features]
 default = [ "symmetric" ]
 symmetric = [ "wit-bindgen/symmetric", "dep:symmetric-sharedmem" ]

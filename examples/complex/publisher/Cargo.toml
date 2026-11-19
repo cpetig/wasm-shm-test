@@ -24,3 +24,5 @@ canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical", "wasi-clocks/canoni
 
 [build-dependencies]
 symmetric-link-search = { workspace = true }
+# built first, so that the build script finds the library
+wasi-clocks-symmetric = { workspace = true, optional = true }
