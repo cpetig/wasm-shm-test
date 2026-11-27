@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "canonical", no_main)]
 use wasm_shm::AttachOptions;
 
 fn lift(src: wasm_shm::Address) -> u32 {
@@ -37,30 +36,7 @@ async fn run_subscribers() {
     futures::join!(future1, future2);
 }
 
-// symmetric: plain main, spawning needs to happen inside of block_on
-#[cfg(feature = "symmetric")]
+// std's main is exported as the async wasi:cli/run on wasm32-wasip3; spawning needs to happen inside of block_on
 pub fn main() {
     wit_bindgen::block_on(run_subscribers());
-}
-
-// canonical: export the asynchronous wasi:cli/run (WASI 0.3) so that the host runs us as an async task
-#[cfg(feature = "canonical")]
-mod cli {
-    wit_bindgen::generate!({
-        inline: r#"
-            package wasi:cli@0.3.0-rc-2026-02-09;
-            interface run { run: async func() -> result; }
-            world app { export run; }
-        "#,
-    });
-
-    struct App;
-    export!(App);
-
-    impl exports::wasi::cli::run::Guest for App {
-        async fn run() -> Result<(), ()> {
-            super::run_subscribers().await;
-            Ok(())
-        }
-    }
 }

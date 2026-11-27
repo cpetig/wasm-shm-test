@@ -1,5 +1,5 @@
 #!/bin/sh
-# build the complex example for wasm32-wasip2 (canonical ABI) and compose
+# build the complex example for wasm32-wasip3 (canonical ABI) and compose
 # starter + publisher + consumer + pub-sub into one component
 set -e
 cd "$(dirname "$0")"
@@ -11,9 +11,9 @@ compose() {
 ROOT=$(pwd)/../..
 # the pub-sub component
 "$ROOT/pub-sub/build-wasm.sh" >/dev/null
-PUBSUB=$ROOT/pub-sub/target/wasm32-wasip2/debug/pub-sub.wasm
-(cd .. && cargo build --target wasm32-wasip2 -p starter -p publisher -p consumer)
-T=../target/wasm32-wasip2/debug
+PUBSUB=$ROOT/pub-sub/target/wasm32-wasip3/debug/pub-sub.wasm
+(cd .. && cargo build --target wasm32-wasip3 -p starter -p publisher -p consumer)
+T=../target/wasm32-wasip3/debug
 OUT=$T/complex.wasm
 # validation is skipped: the starter exports async wasi:cli/run
 compose -o $T/c1.wasm $T/starter.wasm -d $T/publisher.wasm

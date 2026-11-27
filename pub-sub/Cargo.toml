@@ -37,7 +37,7 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["canonical"]
-# component model canonical ABI, for wasm32-wasip2
+# component model canonical ABI, for wasm32-wasip3
 canonical = ["wit-bindgen/canonical"]
 # build option: native shared library using the symmetric ABI, also implements test:shm/exchange
 symmetric = ["dep:symmetric_executor", "dep:symmetric_stream", "dep:symmetric-link-search", "wit-bindgen/symmetric"]

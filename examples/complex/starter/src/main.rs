@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "canonical", no_main)]
 wit_bindgen::generate!({
     path: "../wit/",
     world: "starter",
@@ -20,31 +19,8 @@ async fn run_all() {
     test::complex::receiver::start(publ2, true).await;
 }
 
-#[cfg(feature = "symmetric")]
 fn main() {
     wit_bindgen::block_on(run_all());
-}
-
-// canonical: export the asynchronous wasi:cli/run (WASI 0.3)
-#[cfg(feature = "canonical")]
-mod cli {
-    wit_bindgen::generate!({
-        inline: r#"
-            package wasi:cli@0.3.0-rc-2026-02-09;
-            interface run { run: async func() -> result; }
-            world app { export run; }
-        "#,
-    });
-
-    struct App;
-    export!(App);
-
-    impl exports::wasi::cli::run::Guest for App {
-        async fn run() -> Result<(), ()> {
-            super::run_all().await;
-            Ok(())
-        }
-    }
 }
 
 // just to force linking

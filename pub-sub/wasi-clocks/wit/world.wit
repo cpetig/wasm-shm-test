@@ -1,1 +1,11 @@
-../WASI/proposals/clocks/wit-0.3.0-draft/world.wit
+package wasi:clocks@0.3.0;
+
+@since(version = 0.3.0)
+world imports {
+    @since(version = 0.3.0)
+    import monotonic-clock;
+    @since(version = 0.3.0)
+    import system-clock;
+    @unstable(feature = clocks-timezone)
+    import timezone;
+}
