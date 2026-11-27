@@ -8,7 +8,6 @@ wasm-shm = { workspace = true }
 wit-bindgen = { workspace = true }
 futures.workspace = true
 flat = { workspace = true }
-publisher_link = { package = "publisher", path = "../publisher", optional = true, default-features = false }
 
 [build-dependencies]
 symmetric-link-search = { workspace = true, optional = true }
@@ -19,6 +18,4 @@ crate-type = ["cdylib"]
 [features]
 default = ["canonical"]
 canonical = ["wit-bindgen/canonical", "wasm-shm/canonical"]
-# link the publisher into the consumer component (see README)
-combined = ["canonical", "dep:publisher_link", "publisher_link/canonical"]
 symmetric = ["wit-bindgen/symmetric", "wasm-shm/symmetric", "dep:symmetric-link-search"]

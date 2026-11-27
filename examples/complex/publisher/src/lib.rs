@@ -46,7 +46,7 @@ fn write_to_buffer(value: u32, buffer: &mut wasm_shm::MemoryBlock) -> Result<(),
 use wasi_clocks::monotonic_clock::wait_for;
 
 impl exports::test::complex::sender::Guest for MyWorld {
-    fn start() -> wasm_shm::Subscriber {
+    async fn start() -> wasm_shm::Subscriber {
         let memsize = wasm_shm::MemoryBlock::optimum_size(1, 1024);
         let _alloc = if memsize > 0 {
             let area = unsafe {
@@ -77,7 +77,3 @@ impl exports::test::complex::sender::Guest for MyWorld {
 }
 
 export!(MyWorld);
-
-// used to force linking to our rlib in the "combined" feature of "consumer"
-#[cfg(feature = "canonical")]
-pub fn link_to_publisher() {}

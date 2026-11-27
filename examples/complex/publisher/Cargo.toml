@@ -14,8 +14,7 @@ wasi-clocks = { workspace = true }
 symmetric-link-search = { workspace = true, optional = true }
 
 [lib]
-# rlib is only needed for the "combined" feature of consumer
-crate-type = ["rlib", "cdylib"]
+crate-type = ["cdylib"]
 
 [features]
 default = ["canonical"]

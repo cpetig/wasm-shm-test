@@ -469,16 +469,27 @@ fn main() -> anyhow::Result<()> {
         wasmtime_wasi::p3::add_to_linker(&mut linker)?;
 
         let instance = linker.instantiate_async(&mut store, &component).await?;
-        let command = Command::new(&mut store, &instance)?;
-        // instance
-        //     .run_concurrent(&mut store, async move |store| {
-        //         command.wasi_cli_run().call_run(store).await
-        //     })
-        command
-            .wasi_cli_run()
-            .call_run(&mut store)
-            .await?
-            .map_err(|_e| anyhow::Error::msg("fail?"))?;
+        // prefer an asynchronous WASI 0.3 wasi:cli/run export, fall back to the synchronous 0.2 one
+        let is_p3 = component
+            .component_type()
+            .exports(&engine)
+            .any(|(name, _)| name.starts_with("wasi:cli/run@0.3"));
+        if is_p3 {
+            let command = wasmtime_wasi::p3::bindings::Command::new(&mut store, &instance)?;
+            store
+                .run_concurrent(async move |accessor| {
+                    command.wasi_cli_run().call_run(accessor).await
+                })
+                .await??
+                .map_err(|_e| anyhow::Error::msg("fail?"))?;
+        } else {
+            let command = Command::new(&mut store, &instance)?;
+            command
+                .wasi_cli_run()
+                .call_run(&mut store)
+                .await?
+                .map_err(|_e| anyhow::Error::msg("fail?"))?;
+        }
         Ok::<(), anyhow::Error>(())
     };
     let runtime = tokio::runtime::Builder::new_current_thread()

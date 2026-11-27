@@ -14,7 +14,7 @@ wit-bindgen = { path = "../wit-bindgen/crates/symmetric_executor/bindgen", packa
 futures = "0.3.31"
 # only used by the native (symmetric ABI) build
 symmetric_executor = { path = "../wit-bindgen/crates/symmetric_executor" }
-symmetric_stream = { path = "../wit-bindgen/crates/symmetric_executor/symmetric_stream" }
+symmetric_stream = { path = "../wit-bindgen/crates/symmetric_executor/symmetric_stream", default-features = false }
 symmetric-link-search = { path = "../wit-bindgen/crates/symmetric_executor/link-search" }
 
 # the pub-sub component: implements test:shm/pub-sub on top of the host's test:shm/exchange

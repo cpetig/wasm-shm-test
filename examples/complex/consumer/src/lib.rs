@@ -31,8 +31,31 @@ fn read_value(buf: wasm_shm::MemoryBlock) {
     }
 }
 
+// every component has its own linear memory, so the consumer needs storage of its own
+// to attach the shared memory blocks it receives (once per component)
+fn ensure_storage() {
+    static DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if DONE.swap(true, std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    let memsize = wasm_shm::MemoryBlock::optimum_size(1, 1024);
+    // the host may not need storage at all
+    if memsize == 0 {
+        return;
+    }
+    let area = unsafe {
+        std::alloc::alloc(std::alloc::Layout::from_size_align(memsize as usize, 8).unwrap())
+    };
+    wasm_shm::MemoryBlock::add_storage(wasm_shm::MemoryArea {
+        addr: unsafe { wasm_shm::Address::from_handle((area as usize).try_into().unwrap()) },
+        size: memsize,
+    })
+    .unwrap();
+}
+
 impl exports::test::complex::receiver::Guest for MyWorld {
-    fn start(src: wasm_shm::Subscriber, block: bool) {
+    async fn start(src: wasm_shm::Subscriber, block: bool) {
+        ensure_storage();
         let mut stream = src.get_stream();
         drop(src); // this closes the publisher when the writer drops
         let future = async move {
@@ -45,7 +68,7 @@ impl exports::test::complex::receiver::Guest for MyWorld {
             }
         };
         if block {
-            wit_bindgen::block_on(future);
+            future.await;
         } else {
             wit_bindgen::spawn(future);
         }
@@ -53,9 +76,3 @@ impl exports::test::complex::receiver::Guest for MyWorld {
 }
 
 export!(MyWorld);
-
-// just to force linking
-#[cfg(feature = "combined")]
-pub fn dummy() {
-    publisher_link::link_to_publisher();
-}

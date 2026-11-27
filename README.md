@@ -1,108 +1,116 @@
 # Wasm shared memory proof of concept
 
-This shows that six shared memory primitiv functions which are
-compatible with plain wasm can also apply for the component model
-(up to WASI 0.3).
+This shows that a handful of shared memory primitives, compatible with plain
+wasm, also work for the component model (WASI 0.2 and 0.3). Large buffers
+(images, tensors, …) can then be passed between components without copying.
 
-The functions are defined by WIT but don't form a composable interface, 
-because they can only be implemented by the host - as they require
-access to the guest memory.
+The primitives are defined in WIT (`wit/shm.wit`, interface `test:shm/exchange`),
+but they don't form a composable interface: only the host can implement them,
+because they need access to the guest's linear memory.
 
-Module "test:shm/exchange" (wat style) in order of typical invocation
+See [DESIGN.md](DESIGN.md) for the ideas behind it, and how this could map to
+a canonical ABI option.
 
- - "[constructor]memory-block" (func (param size:i32) (result id:i32))
- - "[method]memory-block.minimum-size" (func (param id:i32) (result alloc_size:i32))
- - "[static]memory-block.add-storage" (func (param id:i32 addr:i32 size:i32 resultptr:i32))
- - "[method]memory-block.attach" (func (param id:i32 flags:i32 resultptr:i32))
- - "[method]memory-block.detach" (func (param id:i32 consumed:i32))
- - "[resource-drop]memory-block" (func (param id:i32))
+## The `exchange` interface
 
-or more readable
+Core functions of `test:shm/exchange`, in the order of a typical invocation:
 
-| name | param | result |
-| ---- | ----- | ------ |
-| constructor | size | id |
-| method minimum-size| id | alloc_size|
-|method add-storage| addr size *resultptr*|👈|
-|method attach| id flags *resultptr*|👈|
-|method detach| id consumed|-|
-|drop| id|-|
+| function                            | params                 | result    |
+| ----------------------------------- | ---------------------- | --------- |
+| `[constructor]memory-block`         | size                   | id        |
+| `[method]memory-block.minimum-size` | id                     | alloc size |
+| `[static]memory-block.add-storage`  | addr, size, *resultptr* | via resultptr |
+| `[method]memory-block.attach`       | id, flags, *resultptr* | via resultptr |
+| `[method]memory-block.detach`       | id, consumed           | –         |
+| `[resource-drop]memory-block`       | id                     | –         |
 
-See shm.wit for more in depth explanations of the semantics.
+The guest provides storage inside its linear memory (`add-storage`), but it
+never controls the address used, e.g. because of page alignment or other
+MMU/MPU restrictions. Attaching maps the block into that storage: exclusive
+for writing, shared for reading.
 
-Please note that the guest is providing storage inside its linear memory 
-but can never control the address used, e.g. due to page alignment 
-or other MMU/MPU restrictions.
+Convenience additions:
 
-In addition there are some convenience additions:
+- `clone`: broadcast a read-only buffer to multiple consumers
+- `optimum-size`: buffer-independent allocation size for several simultaneous
+  attachments with minimal overhead
+- `create-partition`: hand out sub-regions (for allocator components)
+- `create-local`: wrap local memory in a memory block, bound to one linear
+  memory (likely superseded by `create-partition`)
 
- - clone: for broadcasting a read-only buffer to multiple consumers
- - optimum-size: calculate buffer independent recommended allocation size,
-    supporting multiple attachments simultaneously with minimal overhead
- - create-local: wrap local memory in a memory-block,
-    bound to one linear address space
- - create-partition: hand out sub-regions
+## Layout
 
-## Minimal example
+| directory | contents |
+| --------- | -------- |
+| `wit/` | `shm.wit`: the `exchange` and `pub-sub` interfaces, and the worlds of the examples |
+| `runtime/` | wasmtime based host implementing `test:shm/exchange` via `mmap`, runs a composed component |
+| `examples/minimal/` | `main` allocates a buffer, `impl` increments a byte in it, `main` checks the result |
+| `pub-sub/` | publisher/subscriber component that passes memory blocks over streams (zero copy) |
+| `pub-sub/rust-client/` | crate `wasm-shm`: Rust bindings for using `exchange` and `pub-sub` |
+| `pub-sub/wasi-clocks/` | Rust bindings for importing `wasi:clocks` 0.3 |
+| `pub-sub/test/` | `publisher` publishes 20 integers, `subscriber` reads them through two subscriptions |
+| `examples/complex/` | publishes a `list<string>` to two subscribers using [flat data types](https://github.com/cpetig/flat-types-rust), never copying the contents after the initial (mostly in-place) creation |
+| `wit-bindgen/` | submodule: fork of wit-bindgen (WASI 0.3 bindings, plus the native build option) |
+| `flat-types-rust/` | submodule: the flat data types used by the complex example |
 
-See `examples/minimal/`
+## Building and running
 
-The `main` component allocates a shared buffer, passes it to a reactor (`impl`) 
-which attaches the buffer, increments the specified byte and returns. Then
-the main component attaches the buffer and verifies the requested increments.
+Prerequisites: a nightly Rust toolchain with the `wasm32-wasip2` target,
+[`wasm-tools`](https://github.com/bytecodealliance/wasm-tools), and the
+submodules (`git submodule update --init --recursive`).
 
-These components are compiled as wasm components and the provided runtime is 
-based on wasmtime, and provides the shared memory primitives.
+```sh
+make run-minimal     # prints "... = 3"
+make run-pub-sub     # two subscribers receive values, one per second
+make run-complex
+```
 
-Caveat: This implementation isn't checking the semantic behavior 
-(exclusive attach) and abuses wasmtime internals. 
-**Don't plan to use it in production!**
+`make` builds everything. Each step on its own:
 
-## Publisher subscriber
+- runtime: `cd runtime && cargo build`; run a component with
+  `runtime/target/debug/runtime <component.wasm>`
+- minimal example: `cd examples && cargo build --target wasm32-wasip2 -p main -p implementation`,
+  then compose `main.wasm` with `implementation.wasm` (see `Makefile`)
+- pub-sub: `pub-sub/build-wasm.sh` builds and composes `pub-sub/target/wasm32-wasip2/debug/combined.wasm`
+- complex example: `examples/complex/build-wasm.sh` (also builds the pub-sub component)
 
-The `pub-sub` folder contains a publisher-subscriber setup which uses
-memory blocks to achieve zero copy.
+Components that wait on streams can't block inside the synchronous
+`wasi:cli/run` 0.2 that Rust's `main` becomes. The pub-sub subscriber and the
+complex starter therefore export the asynchronous WASI 0.3 `wasi:cli/run`
+instead (`no_main` plus `generate!`), and the runtime prefers that export.
 
-In there:
+Caveat: the runtime doesn't check the semantic rules (e.g. exclusive attach)
+and relies on wasmtime internals. **Don't use it in production!**
 
- - `src`: Publisher subscriber component using memory blocks provided by the host;
-     also contains a memory block implementation for symmetric mode (native compilation)
- - `rust-client`: Import crate for the `pub-sub` component
- - `test/publisher`: Publishes 20 integers (linked into subscriber module),
-    this uses WASI 0.3 clocks and streams
- - `test/subscriber`: Two subscription to published values
+## Native build option (symmetric ABI)
 
-Full source code compatibility between native (symmetric ABI) and 
-wasm (canonical ABI) requires a fork of wit-bindgen (included).
+All crates can also be built as native shared libraries that call each other
+directly, using the
+[symmetric ABI](https://github.com/WebAssembly/component-model/issues/386)
+of the wit-bindgen fork (see `wit-bindgen/crates/cpp/DESIGN.md`) instead of
+the component model. The same source code
+compiles for both. In this mode `pub-sub` also implements `test:shm/exchange`
+(in-process, no `mmap`), and `pub-sub/wasi-clocks/native` provides `wasi:clocks`.
+No wasm runtime is involved.
 
-The generated code checked in at rust-client is just for debugging convenience,
-the `bindgen!` macro works equally well.
+The features `canonical` (default) and `symmetric` are mutually exclusive:
 
-This example doesn't handle blocking buffers attached to subscribers, 
-an extension to support this is planned.
+```sh
+cd pub-sub && cargo run -p subscriber --no-default-features -F symmetric
+cd examples && cargo run -p starter --no-default-features -F symmetric
+```
 
-## Complex example
+or `make native` / `make run-native`. Use `cargo run`: it sets the library path
+for the shared libraries, while running a binary directly needs
+`LD_LIBRARY_PATH`.
 
-`examples/complex` contains a complex example which uses 
-[flat data types](https://github.com/cpetig/flat-types-rust) to publish a
-`list<string>` to two subscribers - without ever copying the contents after
-the initial (mostly in-place) buffer creation.
+## Limitations and ideas
 
-See [this issue](https://github.com/WebAssembly/component-model/issues/398)
-for further discussion.
-
-## Building
-
- - runtime: Simply `cargo build` in `runtime`
- - simple example: `cd runtime; ./build.sh; cargo run`
- - pub-sub native: `cd pub-sub/test/subscriber; cargo run`
- - pub-sub wasm: `cd pub-sub; ./build-wasi.sh; ../runtime/target/debug/runtime`
- - complex example: `cd pub-sub; ./build-wasi.sh; cd ../example/complex/starter ; ./build-wasm2.sh ; ../../../runtime/target/debug/runtime `
- - complex native: `cd example/complex/starter ; cargo run`
-
-## TODO
-
- - On wasmtime the complex example built by `build-wasm.sh` ends in a deadlock, 
-   while fusing consumer and publisher into one module fixes this somehow.
- - The complex example can create a foundation for 
-   [caller provided buffers](https://github.com/WebAssembly/component-model/issues/369).
+- `publish` doesn't wait for slow subscribers: a write that can't complete
+  immediately is dropped. Blocking attachments are a planned extension.
+- The complex example can be a foundation for
+  [caller provided buffers](https://github.com/WebAssembly/component-model/issues/369),
+  see also [this issue](https://github.com/WebAssembly/component-model/issues/398).
+- The generated bindings checked in under `pub-sub/rust-client/src` and
+  `pub-sub/wasi-clocks/src` only ease debugging, `generate!` works equally
+  well. Regenerate them with the `generate.sh` scripts.

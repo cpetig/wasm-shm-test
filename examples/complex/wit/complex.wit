@@ -6,12 +6,12 @@ package test:complex;
 
 interface sender {
     use test:shm/pub-sub.{subscriber};
-    start: func() -> subscriber;
+    start: async func() -> subscriber;
 }
 
 interface receiver {
     use test:shm/pub-sub.{subscriber};
-    start: func(source: subscriber, block: bool);
+    start: async func(source: subscriber, block: bool);
 }
 
 world send-world {

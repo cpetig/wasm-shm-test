@@ -21,7 +21,6 @@ dependencies = [
  "flat",
  "futures",
  "mini-bindgen",
- "publisher",
  "symmetric-link-search",
  "wasm-shm",
 ]
