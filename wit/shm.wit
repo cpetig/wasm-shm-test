@@ -32,12 +32,21 @@ interface exchange {
         wrong-size,
         // somehow the host decided that it isn't possible to mmap
         internal,
+        // the handle only grants read access: attach with `write`, or a
+        // write partition requested from a read-only handle
+        read-only,
+        // create-partition: the range overlaps a live partition of the same block
+        overlap,
+        // create-partition: start+size exceeds the block, or size is 0
+        out-of-range,
     }
     resource memory-block {
-        // construct a memory buffer by size
+        // construct a memory buffer by size, the handle has read-write rights
         constructor(size: bytes);
 
         // only useful for shared buffers
+        // the clone keeps the rights (read-write or read-only) of this handle
+        // and shares the attach state (busy) with it
         clone: func() -> memory-block;
         
         // all non-static member functions implicitely borrow a 
@@ -61,9 +70,30 @@ interface exchange {
         // the area should be at least "minimum-size" big
         add-storage: static func(buffer: memory-area) -> result<_, error>;
 
-        // call on parent (which could still be attached) to hand out sub-regions,
-        // typically used by shm management components
-        create-partition: func(start: bytes, size: bytes, mode: attach-options);
+        // call on parent to hand out the sub-range [start, start+size) as a
+        // memory-block of its own, typically used by shm management components.
+        // - mode containing `write` requests a read-write partition, otherwise
+        //   it is read-only (`shared` has no meaning here). A read-only handle
+        //   can only create read-only partitions (error `read-only`).
+        // - partitions of the same block (created through any of its clones)
+        //   are siblings and must not overlap while live (error `overlap`).
+        //   A partition is live until its last handle (including clones of it)
+        //   is dropped, then the range is free again. To share a range hand
+        //   out clones of the partition instead of overlapping partitions.
+        // - the range must be inside the block and not empty (`out-of-range`).
+        // - a partition is a block of its own: own size, own attach exclusion
+        //   (write exclusive, read shared) and own valid/consumed bytes. Its
+        //   data is the parent's storage, a write through the partition is
+        //   visible through the parent at offset `start`.
+        // - the partition keeps the parent's storage alive even if the parent
+        //   handle is dropped. Partitions can be partitioned again.
+        // - on wasm the host maps whole pages, so an unaligned partition also
+        //   makes its neighbor bytes in these pages visible (accepted leak).
+        // TODO: the parent (and its clones) can still attach the whole block
+        // independent of its partitions. Handing out a partition should lock
+        // the range in the parent, so that write-exclusive/read-shared also
+        // applies between the parent and its partitions.
+        create-partition: func(start: bytes, size: bytes, mode: attach-options) -> result<memory-block, error>;
 
         // optional: create a buffer local to this linear memory
         // likely superceded by create-partition (which works on wasm as well)

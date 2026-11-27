@@ -20,6 +20,14 @@ struct MyMemory {
     attach_count: AtomicU32,
     write: AtomicBool,
     shared: AtomicBool,
+    // rights of every handle (and clone) of this block: false for read-only partitions
+    writable: bool,
+    // partitions: keeps the parent's storage alive, and the range is registered
+    // in the parent while this block lives (see Drop)
+    parent: Option<Arc<MyMemory>>,
+    start: u32,
+    // ranges (start, size) of the live partitions handed out from this block
+    partitions: Mutex<Vec<(u32, u32)>>,
 }
 
 struct MyPublisher {
@@ -69,32 +77,56 @@ impl exchange::GuestAddress for Dummy {}
 
 #[cfg(feature = "symmetric")]
 impl MyMemory {
-    fn new(size: u32) -> Arc<Self> {
+    fn with(
+        address: *mut u8,
+        capacity: u32,
+        writable: bool,
+        parent: Option<Arc<MyMemory>>,
+        start: u32,
+    ) -> Arc<Self> {
         Arc::new(MyMemory {
-            address: unsafe {
-                std::alloc::alloc(
-                    std::alloc::Layout::from_size_align(
-                        size as usize,
-                        if size < 2 || size & 1 != 0 {
-                            1
-                        } else if size < 4 || size & 2 != 0 {
-                            2
-                        } else if size < 8 || size & 4 != 0 {
-                            4
-                        } else {
-                            8
-                        },
-                    )
-                    .unwrap(),
-                )
-            },
-            capacity: size,
+            address,
+            capacity,
             written: AtomicU32::new(0),
             attach_count: AtomicU32::new(0),
             write: AtomicBool::new(false),
             read_consumed: AtomicU32::new(0),
             shared: AtomicBool::new(false),
+            writable,
+            parent,
+            start,
+            partitions: Mutex::new(Vec::new()),
         })
+    }
+
+    fn new(size: u32) -> Arc<Self> {
+        let align = if size < 2 || size & 1 != 0 {
+            1
+        } else if size < 4 || size & 2 != 0 {
+            2
+        } else if size < 8 || size & 4 != 0 {
+            4
+        } else {
+            8
+        };
+        let address = unsafe {
+            std::alloc::alloc(std::alloc::Layout::from_size_align(size as usize, align).unwrap())
+        };
+        MyMemory::with(address, size, true, None, 0)
+    }
+}
+
+#[cfg(feature = "symmetric")]
+impl Drop for MyMemory {
+    fn drop(&mut self) {
+        // last handle of a partition is gone: its range is free again
+        if let Some(parent) = &self.parent {
+            let mut list = parent.partitions.lock().unwrap();
+            if let Some(pos) = list.iter().position(|&(s, n)| s == self.start && n == self.capacity)
+            {
+                list.swap_remove(pos);
+            }
+        }
     }
 }
 
@@ -113,6 +145,9 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
     }
     fn attach(&self, opt: AttachOptions) -> Result<MemoryArea, Error> {
         if opt & AttachOptions::WRITE == AttachOptions::WRITE {
+            if !self.writable {
+                return Err(Error::ReadOnly);
+            }
             if self
                 .attach_count
                 .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
@@ -161,7 +196,8 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
         } else {
             let shared = self.shared.load(Ordering::Relaxed);
             if !shared {
-                assert!(count == 1);
+                // several readers may be attached (read is shared), each consumes its part
+                assert!(count >= 1);
                 self.read_consumed.fetch_add(consumed, Ordering::Release);
             }
         }
@@ -176,21 +212,49 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
         todo!()
     }
     fn create_local(buffer: MemoryArea) -> MemoryBlock {
-        MemoryBlock::new(Arc::new(MyMemory {
-            address: buffer.addr.take_handle() as *mut u8,
-            capacity: buffer.size,
-            written: AtomicU32::new(0),
-            attach_count: AtomicU32::new(0),
-            write: AtomicBool::new(false),
-            read_consumed: AtomicU32::new(0),
-            shared: AtomicBool::new(false),
-        }))
+        MemoryBlock::new(MyMemory::with(
+            buffer.addr.take_handle() as *mut u8,
+            buffer.size,
+            true,
+            None,
+            0,
+        ))
     }
     fn clone(&self) -> MemoryBlock {
+        // shares the Arc, so rights and attach state are shared with the clone
         MemoryBlock::new(Clone::clone(self))
     }
-    fn create_partition(&self, _start: Bytes, _size: Bytes, _mode: AttachOptions) {
-        todo!()
+    fn create_partition(
+        &self,
+        start: Bytes,
+        size: Bytes,
+        mode: AttachOptions,
+    ) -> Result<MemoryBlock, Error> {
+        let write = mode & AttachOptions::WRITE == AttachOptions::WRITE;
+        if write && !self.writable {
+            return Err(Error::ReadOnly);
+        }
+        let end = start as u64 + size as u64;
+        if size == 0 || end > self.capacity as u64 {
+            return Err(Error::OutOfRange);
+        }
+        // check and register under one lock
+        let mut list = self.partitions.lock().unwrap();
+        if list.iter().any(|&(s, n)| start < s + n && s < end as u32) {
+            return Err(Error::Overlap);
+        }
+        list.push((start, size));
+        drop(list);
+        // TODO: lock the range in the parent (see shm.wit), for now the parent can
+        // still attach all of its bytes independent of the partitions
+        let address = unsafe { self.address.add(start as usize) };
+        Ok(MemoryBlock::new(MyMemory::with(
+            address,
+            size,
+            write,
+            Some(Clone::clone(self)),
+            start,
+        )))
     }
 }
 
