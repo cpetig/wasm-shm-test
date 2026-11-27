@@ -462,10 +462,7 @@ fn main() -> anyhow::Result<()> {
 
         let mut linker = Linker::new(&engine);
         myshm::add_to_linker(&mut linker)?;
-        // Rust's std for wasm32-wasip2 imports the unstable wasi:cli/exit.exit-with-code
-        let mut options = wasmtime_wasi::p2::bindings::LinkOptions::default();
-        options.cli_exit_with_code(true);
-        wasmtime_wasi::p2::add_to_linker_with_options_async(&mut linker, &options)?;
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
         wasmtime_wasi::p3::add_to_linker(&mut linker)?;
 
         let instance = linker.instantiate_async(&mut store, &component).await?;
