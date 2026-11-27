@@ -113,6 +113,7 @@ component model that address the same copying cost:
 | [Flat data representation (#398)](https://github.com/WebAssembly/component-model/issues/398) | relative-pointer, position-independent encodings of lists and strings | makes structured data meaningful at any mapping address; example 3 is the prototype |
 | [Memory mapping in the CM (#568)](https://github.com/WebAssembly/component-model/issues/568) | expose core wasm `memory.map` as a mappable WIT type | the discussion links this repo's [DESIGN.md](DESIGN.md); `attach`/`detach` would become built-ins on top of it |
 | [memory-control](https://github.com/WebAssembly/memory-control) | core wasm proposal for mapping and protecting regions of linear memory | what a non-hack runtime implementation would use instead of `mmap` behind the engine's back |
+| [Wasm GC ABI (#525)](https://github.com/WebAssembly/component-model/issues/525) | an ABI option that passes values as GC objects instead of through linear memory | a sibling option: it changes where values land, not whether they are copied; one WIT buffer type should work under both |
 | [Symmetric ABI (#386)](https://github.com/WebAssembly/component-model/issues/386) | a calling convention to link components natively | the optional native build of this repository (see below) |
 
 According to the component model
@@ -120,6 +121,14 @@ According to the component model
 `realloc` is expected to be replaced by "a combination of caller-supplied
 buffers and lazy value copying". Shared memory blocks would complement that
 for large payloads, where even one copy is too many.
+
+The roadmap from the
+[October 2026 component model update](https://www.youtube.com/watch?v=HBq9DgmCfPk)
+puts this "ABI v2" with lazy lowering next, as an opt-in ABI option, and the
+GC ABI later, before 1.0. DESIGN.md
+[discusses what that means for memory blocks](DESIGN.md#outlook-abi-v2-lazy-lowering-and-the-gc-option),
+including how a host could serve lazy values from memory blocks by mapping
+instead of copying.
 
 ## Building and running
 

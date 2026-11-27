@@ -158,6 +158,66 @@ per hop dominates the cost.
   behind the engine's back. [#568](https://github.com/WebAssembly/component-model/issues/568)
   discusses how the component model could expose such mappings.
 
+## Outlook: ABI v2, lazy lowering and the GC option
+
+Luke Wagner's component model update at the
+[Bytecode Alliance Plumbers Summit, October 2026](https://www.youtube.com/watch?v=HBq9DgmCfPk)
+places the related work on the roadmap. Timestamps are approximate.
+
+- **ABI v2 is next** ([42:30](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=2550s)).
+  It will be an opt-in ABI option, rolled out incrementally and made the only
+  option at 1.0. Lazy lowering is its core
+  ([43:00](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=2580s)): no more
+  `cabi_realloc`, lazy values forwarded to imports without copying through
+  the forwarder's memory, the size known before lowering (so a receiver can
+  refuse oversized values), recursive values, and ABI options per value.
+  Multi-value returns, error context and the stackful async ABI would come
+  with it.
+- **Caller-supplied return buffers**
+  ([45:50](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=2750s)). For
+  dynamically sized results that aren't lists, the caller pre-fills the
+  return area with a buffer pointer and length. The callee writes the result
+  there if it fits, and falls back to a lazy value otherwise.
+- **The Wasm GC ABI is on the list for 1.0**, after the next items
+  ([47:00](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=2820s)). It's
+  motivated by Kotlin, Scala, Dart, Java and OCaml, which currently have to
+  copy through linear memory. Weak handles, so that guest GCs can avoid
+  ownership cycles, are discussed together with callbacks
+  ([49:00](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=2940s)).
+- **`stream.forward`** splices a readable end into a writable end so the
+  forwarding instance can be torn down early
+  ([24:40](https://www.youtube.com/watch?v=HBq9DgmCfPk&t=1480s)).
+
+What this means for memory blocks:
+
+- **ABI v2 is the natural vehicle.** It is being designed now, as an opt-in
+  ABI option, with feedback from the new W3C component model subgroup. A
+  shared memory option fits the same opt-in, incremental model.
+- **Memory blocks can make lazy values zero copy.** A receiver of a lazy
+  value already chooses the destination and learns the size first. If the
+  bytes behind the value are already in a host memory block (because the
+  producer wrote them into an attached block), and the receiver lowers them
+  into page-aligned storage, the host can *map* instead of copy, using a
+  private copy-on-write mapping. Otherwise it copies. Guests can't tell the
+  difference, so the read-only case needs no new WIT type. The explicit
+  `exchange` API stays for what lazy values can't express: exclusive write
+  access, ownership transfer of a buffer, and device or DMA buffers.
+- **Caller-supplied return buffers resemble the "output buffer as last
+  argument" rule** in [Mapping to WIT](#mapping-to-wit-proposal). The
+  difference: there, ownership of the buffer can move. The callee may keep
+  it, forward it, or return a different one (double buffering). That is a
+  point worth raising in the ABI v2 discussion.
+- **The GC option is a sibling, not a replacement.** It changes where values
+  land (GC objects instead of linear memory), not whether they are copied
+  between components. GC arrays are accessed through `array.get`/`array.set`,
+  so they can't replace mappings into linear memory for C, C++ and Rust code,
+  DMA, or targets without a GC. The useful alignment is at the WIT level: one
+  buffer type, like the mappable type in
+  [#568](https://github.com/WebAssembly/component-model/issues/568), should
+  lower sensibly under the linear memory, GC and shared memory options alike.
+  GC languages would use memory blocks as resources, wrapped with
+  finalizers; weak handles help there too.
+
 ## Open questions
 
 - **Drop while attached.** Should dropping the last handle of an attached
@@ -169,7 +229,8 @@ per hop dominates the cost.
   memory. `add-storage` and `attach` would need to name the memory, which the
   canonical ABI's `memory` option could provide.
 - **memory64.** `bytes` is `u32`; blocks larger than 4 GiB or 64-bit memories
-  need a wider type.
+  need a wider type. The component model spec now has rules for memory64
+  (not implemented yet), which `add-storage` and `attach` should follow.
 - **Alignment of contents.** Data written at one mapping address must be
   readable at another. Plain bytes and flat (relative pointer) encodings work;
   absolute pointers inside a block don't.
