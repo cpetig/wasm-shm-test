@@ -1,0 +1,20 @@
+# bindings for importing wasi:clocks (0.3) from Rust
+[package]
+name = "wasi-clocks"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wit-bindgen = { workspace = true }
+# native build: link against the clock implementation in ./native
+wasi-clocks-symmetric = { path = "native", optional = true }
+
+[features]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical"]
+symmetric = ["wit-bindgen/symmetric", "dep:wasi-clocks-symmetric", "dep:symmetric-link-search"]
+
+[build-dependencies]
+symmetric-link-search = { workspace = true, optional = true }
+# built before the build script runs, so that it finds the library
+wasi-clocks-symmetric = { path = "native", optional = true }

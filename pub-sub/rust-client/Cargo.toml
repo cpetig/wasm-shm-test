@@ -1,0 +1,20 @@
+# bindings for using the pub-sub component (and test:shm/exchange) from Rust
+[package]
+name = "wasm-shm"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wit-bindgen = { workspace = true }
+# native build: link against the pub-sub shared library
+pub-sub = { path = "..", optional = true, default-features = false, features = ["symmetric"] }
+
+[build-dependencies]
+symmetric-link-search = { workspace = true, optional = true }
+# built before the build script runs, so that it finds the library
+pub-sub = { path = "..", optional = true, default-features = false, features = ["symmetric"] }
+
+[features]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical"]
+symmetric = ["wit-bindgen/symmetric", "dep:pub-sub", "dep:symmetric-link-search"]

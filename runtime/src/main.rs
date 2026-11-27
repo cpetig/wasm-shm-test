@@ -12,8 +12,6 @@ use wasmtime_wasi_io::IoView;
 wasmtime::component::bindgen!({
     path: "../wit/shm.wit",
     world: "main",
-    include_generated_code_from_file: true,
-    debug: true,
     with: {
         "test:shm/exchange.memory-block": MyMemory,
         "test:shm/exchange.address": MyAddress,
@@ -455,12 +453,19 @@ fn main() -> anyhow::Result<()> {
         let engine = Engine::new(&config)?;
         let mut store = Store::new(&engine, HostState::default());
 
-        let wasm_module_path = "combined.wasm";
-        let component = Component::from_file(&engine, wasm_module_path)?;
+        // the composed component to run, see README
+        let wasm_module_path = std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "combined.wasm".into());
+        let component = Component::from_file(&engine, &wasm_module_path)
+            .map_err(|e| e.context(format!("loading {wasm_module_path}")))?;
 
         let mut linker = Linker::new(&engine);
         myshm::add_to_linker(&mut linker)?;
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+        // Rust's std for wasm32-wasip2 imports the unstable wasi:cli/exit.exit-with-code
+        let mut options = wasmtime_wasi::p2::bindings::LinkOptions::default();
+        options.cli_exit_with_code(true);
+        wasmtime_wasi::p2::add_to_linker_with_options_async(&mut linker, &options)?;
         wasmtime_wasi::p3::add_to_linker(&mut linker)?;
 
         let instance = linker.instantiate_async(&mut store, &component).await?;

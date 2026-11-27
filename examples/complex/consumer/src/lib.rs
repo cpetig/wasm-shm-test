@@ -3,7 +3,6 @@ use wasm_shm::AttachOptions;
 wit_bindgen::generate!({
     path: "../wit/",
     world: "rec-world",
-    debug: true,
     with: {
         "test:shm/exchange": pub_sub,
         "test:shm/pub-sub": pub_sub,
@@ -46,9 +45,9 @@ impl exports::test::complex::receiver::Guest for MyWorld {
             }
         };
         if block {
-            wit_bindgen::rt::async_support::block_on(future);
+            wit_bindgen::block_on(future);
         } else {
-            wit_bindgen::rt::async_support::spawn(future);
+            wit_bindgen::spawn(future);
         }
     }
 }

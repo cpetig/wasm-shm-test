@@ -6,18 +6,19 @@ edition.workspace = true
 [dependencies]
 wasm-shm = { workspace = true }
 wit-bindgen = { workspace = true }
-symmetric_executor = { workspace = true, optional=true }
-symmetric_stream = { workspace = true, optional=true }
-wasi-clocks-symmetric = { workspace = true, optional=true }
 futures.workspace = true
 flat = { workspace = true }
 publisher_link = { package = "publisher", path = "../publisher", optional = true, default-features = false }
 
+[build-dependencies]
+symmetric-link-search = { workspace = true, optional = true }
+
 [lib]
-crate-type = [ "cdylib" ]
+crate-type = ["cdylib"]
 
 [features]
-default = [ "canonical" ]
-symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric" ]
-canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
-combined = [ "canonical", "publisher_link/canonical" ]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical", "wasm-shm/canonical"]
+# link the publisher into the consumer component (see README)
+combined = ["canonical", "dep:publisher_link", "publisher_link/canonical"]
+symmetric = ["wit-bindgen/symmetric", "wasm-shm/symmetric", "dep:symmetric-link-search"]

@@ -17,30 +17,24 @@ fn read_value(buf: wasm_shm::MemoryBlock) -> u32 {
 
 pub fn main() {
     println!("Publisher example");
-    let publisher = publisher::start();
-    let mut stream = publisher.get_stream();
-    let future1 = async move {
-        loop {
-            if let Some(buf) = stream.next().await {
+    // publisher::start spawns a task, which needs to happen inside of block_on
+    wit_bindgen::block_on(async {
+        let publisher = publisher::start();
+        let mut stream = publisher.get_stream();
+        let mut stream2 = publisher.get_stream();
+        drop(publisher);
+        let future1 = async move {
+            while let Some(buf) = stream.next().await {
                 let value = read_value(buf);
                 println!("Received   {value}");
-            } else {
-                break;
             }
-        }
-    };
-    let mut stream2 = publisher.get_stream();
-    drop(publisher);
-    let future2 = async move {
-        loop {
-            if let Some(buf) = stream2.next().await {
+        };
+        let future2 = async move {
+            while let Some(buf) = stream2.next().await {
                 let value = read_value(buf);
                 println!("Received_2 {value}");
-            } else {
-                break;
             }
-        }
-    };
-    let combination = async move { futures::join!(future1, future2) };
-    wit_bindgen::rt::async_support::block_on(combination);
+        };
+        futures::join!(future1, future2);
+    });
 }

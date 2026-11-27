@@ -31,7 +31,6 @@ mod easy_way_out {
 use easy_way_out::wait_for;
 #[cfg(feature = "canonical")]
 use wasi_clocks::monotonic_clock::wait_for;
-use wit_bindgen::rt;
 
 pub fn start() -> wasm_shm::Subscriber {
     let memsize = wasm_shm::MemoryBlock::optimum_size(5, 256);
@@ -50,7 +49,7 @@ pub fn start() -> wasm_shm::Subscriber {
     };
     let publisher = wasm_shm::Publisher::new(5, 256);
     let subscriber = publisher.subscribers();
-    rt::async_support::spawn(async move {
+    wit_bindgen::spawn(async move {
         for i in 1..21 {
             wait_for(1_000_000_000).await;
             let (mut buffer, _initialized) = publisher.allocate();

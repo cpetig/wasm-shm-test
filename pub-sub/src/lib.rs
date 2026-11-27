@@ -2,14 +2,11 @@
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl",
-    debug: true,
 });
-//    symmetric: true,
 #[cfg(feature = "canonical")]
 wit_bindgen::generate!({
     path: "../wit/shm.wit",
     world: "impl2",
-    debug: true,
 });
 
 struct SharedImpl;
@@ -32,12 +29,12 @@ struct MyPublisher {
     pool: Mutex<VecDeque<MemoryBlock>>,
 }
 
+#[cfg(feature = "symmetric")]
 struct Dummy;
 
 export!(SharedImpl);
 
 use std::{
-    // alloc::Layout,
     collections::VecDeque,
     future::IntoFuture,
     sync::{Arc, Mutex},
@@ -46,7 +43,9 @@ use std::{
 #[cfg(feature = "symmetric")]
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-use exchange::{Address, AttachOptions, Bytes, Error, MemoryArea, MemoryBlock};
+use exchange::MemoryBlock;
+#[cfg(feature = "symmetric")]
+use exchange::{Address, AttachOptions, Bytes, Error, MemoryArea};
 #[cfg(feature = "symmetric")]
 use exports::test::shm::exchange;
 use exports::test::shm::pub_sub;
@@ -196,7 +195,7 @@ impl exchange::GuestMemoryBlock for Arc<MyMemory> {
 }
 
 impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
-    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
+    fn get_stream(&self) -> wit_bindgen::StreamReader<MemoryBlock> {
         let s = wit_stream::new::<MemoryBlock>();
         self.subscribers.lock().unwrap().push(s.0);
         s.1
@@ -209,13 +208,9 @@ impl pub_sub::GuestSubscriber for Arc<MyPublisher> {
 
 #[cfg(feature = "symmetric")]
 type MemoryType = Arc<MyMemory>;
-#[cfg(feature = "symmetric")]
-type _HandleType = usize;
 
 #[cfg(feature = "canonical")]
 type MemoryType = exchange::MemoryBlock;
-#[cfg(feature = "canonical")]
-type HandleType = u32;
 
 fn mem_clone(obj: &MemoryBlock) -> MemoryBlock {
     #[cfg(feature = "symmetric")]
@@ -227,33 +222,7 @@ fn mem_clone(obj: &MemoryBlock) -> MemoryBlock {
 
 impl pub_sub::GuestPublisher for Arc<MyPublisher> {
     fn new(elements: u32, element_size: u32) -> Self {
-        let mut mem = Vec::new();
-        // let alignment = if element_size < 2 || element_size & 1 != 0 {
-        //     1
-        // } else if element_size < 4 || element_size & 2 != 0 {
-        //     2
-        // } else if element_size < 8 || element_size & 4 != 0 {
-        //     4
-        // } else {
-        //     8
-        // };
-        for _ in 0..elements {
-            // let area = unsafe {
-            //     std::alloc::alloc(
-            //         Layout::from_size_align(element_size as usize, alignment).unwrap(),
-            //     )
-            // };
-            // #[cfg(feature = "symmetric")]
-            // use exchange::GuestMemoryBlock;
-            // #[cfg(feature = "symmetric")]
-            // mem.push((Arc::<MyMemory> as exchange::GuestMemoryBlock).new(element_size));
-            // #[cfg(feature = "canonical")]
-            mem.push(mem_new(element_size));
-            //     create_local(MemoryArea {
-            //     addr: unsafe { Address::from_handle(area as HandleType) },
-            //     size: element_size,
-            // }));
-        }
+        let mem: Vec<_> = (0..elements).map(|_| mem_new(element_size)).collect();
         Arc::new(MyPublisher {
             _elements: elements,
             _element_size: element_size,
@@ -278,21 +247,16 @@ impl pub_sub::GuestPublisher for Arc<MyPublisher> {
                 std::task::Poll::Ready(_) => {}
                 std::task::Poll::Pending => (),
             }
-
-            // fut.poll
+            // a pending write is dropped here: slow subscribers miss values (see README)
         }
     }
     fn subscribers(&self) -> pub_sub::Subscriber {
         pub_sub::Subscriber::new(Clone::clone(self))
     }
 
-    fn get_stream(&self) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
+    fn get_stream(&self) -> wit_bindgen::StreamReader<MemoryBlock> {
         let s = wit_stream::new::<MemoryBlock>();
         self.subscribers.lock().unwrap().push(s.0);
         s.1
     }
-
-    // fn clone(original: pub_sub::PublisherBorrow<'_>) -> pub_sub::Publisher {
-    //     pub_sub::Publisher::new(Clone::clone(original.get::<Arc<MyPublisher>>()))
-    // }
 }

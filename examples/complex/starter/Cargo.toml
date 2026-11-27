@@ -4,15 +4,19 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-publisher = { path = "../publisher", default-features = false, optional = true }
-consumer = { path = "../consumer", default-features = false, optional = true }
 wasm-shm = { workspace = true }
 wit-bindgen = { workspace = true }
-symmetric_executor = { workspace = true, optional=true }
-symmetric_stream = { workspace = true, optional=true }
-wasi-clocks-symmetric = { workspace = true, optional=true }
+# native build: the other components are shared libraries to link against
+publisher = { path = "../publisher", default-features = false, optional = true }
+consumer = { path = "../consumer", default-features = false, optional = true }
+
+[build-dependencies]
+symmetric-link-search = { workspace = true, optional = true }
+# built before the build script runs, so that it finds the libraries
+publisher = { path = "../publisher", default-features = false, optional = true }
+consumer = { path = "../consumer", default-features = false, optional = true }
 
 [features]
-default = [ "canonical" ]
-symmetric = [ "dep:symmetric_executor", "dep:symmetric_stream", "dep:wasi-clocks-symmetric", "wit-bindgen/symmetric", "wasm-shm/symmetric", "publisher/symmetric", "consumer/symmetric" ]
-canonical = [ "wit-bindgen/canonical", "wasm-shm/canonical" ]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical", "wasm-shm/canonical"]
+symmetric = ["wit-bindgen/symmetric", "wasm-shm/symmetric", "dep:publisher", "dep:consumer", "publisher/symmetric", "consumer/symmetric", "dep:symmetric-link-search"]

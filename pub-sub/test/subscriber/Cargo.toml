@@ -1,0 +1,19 @@
+# subscribes twice to the values of the publisher
+[package]
+name = "subscriber"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+publisher = { path = "../publisher", default-features = false }
+wasm-shm = { path = "../../rust-client", default-features = false }
+wit-bindgen = { workspace = true }
+futures.workspace = true
+
+[build-dependencies]
+symmetric-link-search = { workspace = true, optional = true }
+
+[features]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical", "wasm-shm/canonical", "publisher/canonical"]
+symmetric = ["wit-bindgen/symmetric", "wasm-shm/symmetric", "publisher/symmetric", "dep:symmetric-link-search"]

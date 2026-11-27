@@ -1,10 +1,10 @@
 [submodule "wit-bindgen"]
 	path = wit-bindgen
 	url = https://github.com/cpetig/wit-bindgen.git
-	branch = work-in-progress
+	branch = autosar-fixes
 [submodule "flat-types-rust"]
 	path = flat-types-rust
 	url = https://github.com/cpetig/flat-types-rust
-[submodule "symmetric/wasi-clocks/WASI"]
-	path = symmetric/wasi-clocks/WASI
+[submodule "pub-sub/wasi-clocks/WASI"]
+	path = pub-sub/wasi-clocks/WASI
 	url = https://github.com/WebAssembly/WASI.git

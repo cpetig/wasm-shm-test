@@ -1,0 +1,15 @@
+# publishes 20 integers, linked into the subscriber
+[package]
+name = "publisher"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wasi-clocks = { path = "../../wasi-clocks", default-features = false }
+wasm-shm = { path = "../../rust-client", default-features = false }
+wit-bindgen = { workspace = true }
+
+[features]
+default = ["canonical"]
+canonical = ["wit-bindgen/canonical", "wasm-shm/canonical", "wasi-clocks/canonical"]
+symmetric = ["wit-bindgen/symmetric", "wasm-shm/symmetric", "wasi-clocks/symmetric"]

@@ -1,10 +1,8 @@
 use wasm_shm::{Address, AttachOptions};
-use wit_bindgen::rt;
 
 wit_bindgen::generate!({
     path: "../wit/",
     world: "send-world",
-    debug: true,
     with: {
         "test:shm/pub-sub/subscriber": wasm_shm::Subscriber,
         "test:shm/exchange": pub_sub,
@@ -65,7 +63,7 @@ impl exports::test::complex::sender::Guest for MyWorld {
         };
         let publisher = wasm_shm::Publisher::new(1, 1024);
         let subscriber = publisher.subscribers();
-        rt::async_support::spawn(async move {
+        wit_bindgen::spawn(async move {
             for i in 1..11 {
                 wait_for(1_000_000_000).await;
                 let (mut buffer, _initialized) = publisher.allocate();

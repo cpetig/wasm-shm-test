@@ -1,3 +1,5 @@
 .vscode
 /wasi_snapshot_preview1.command.wasm
 /wasi_snapshot_preview1.reactor.wasm
+target/
+*.wasm

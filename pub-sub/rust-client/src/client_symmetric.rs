@@ -196,7 +196,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn new(size: Bytes) -> Self {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -221,7 +221,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn clone(&self) -> MemoryBlock {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -261,7 +261,7 @@ pub mod test {
                         );
                         let flags0 = opt;
                         let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -317,7 +317,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn detach(&self, consumed: Bytes) -> () {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -344,7 +344,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn minimum_size(&self) -> Bytes {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -371,7 +371,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn optimum_size(count: u32, size: Bytes) -> Bytes {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -407,7 +407,7 @@ pub mod test {
                         );
                         let MemoryArea { addr: addr0, size: size0 } = &buffer;
                         let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -451,7 +451,7 @@ pub mod test {
                 pub fn create_local(buffer: MemoryArea) -> MemoryBlock {
                     unsafe {
                         let MemoryArea { addr: addr0, size: size0 } = &buffer;
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/exchange")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -573,7 +573,7 @@ pub mod test {
                     &self,
                 ) -> wit_bindgen::rt::async_support::StreamReader<MemoryBlock> {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -601,7 +601,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn clone(original: &Subscriber) -> Subscriber {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -626,7 +626,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn new(elements: u32, element_size: Bytes) -> Self {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -654,7 +654,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn subscribers(&self) -> Subscriber {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -692,7 +692,7 @@ pub mod test {
                                 * ::core::mem::size_of::<*const u8>()],
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]
@@ -728,7 +728,7 @@ pub mod test {
                 #[allow(async_fn_in_trait)]
                 pub fn publish(&self, value: MemoryBlock) -> () {
                     unsafe {
-                        #[link(name = "symmetric_sharedmem")]
+                        #[link(name = "pub_sub")]
                         #[link(wasm_import_module = "test:shm/pub-sub")]
                         unsafe extern "C" {
                             #[allow(non_snake_case)]

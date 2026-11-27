@@ -1,0 +1,17 @@
+# native (symmetric ABI) build only: provides wasi:clocks as a shared library,
+# on wasm the host implements these interfaces
+[package]
+name = "wasi-clocks-symmetric"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+symmetric_executor = { workspace = true }
+symmetric_stream = { workspace = true }
+wit-bindgen = { workspace = true, features = ["symmetric"] }
+
+[build-dependencies]
+symmetric-link-search = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
