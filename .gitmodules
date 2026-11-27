@@ -1,7 +1,7 @@
 [submodule "wit-bindgen"]
 	path = wit-bindgen
 	url = https://github.com/cpetig/wit-bindgen.git
-	branch = autosar-fixes
+	branch = symmetric
 [submodule "flat-types-rust"]
 	path = flat-types-rust
 	url = https://github.com/cpetig/flat-types-rust
