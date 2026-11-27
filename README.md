@@ -132,7 +132,8 @@ instead of copying.
 
 ## Building and running
 
-Prerequisites: a nightly Rust toolchain with the `wasm32-wasip2` target,
+Prerequisites: a nightly Rust toolchain with the `wasm32-wasip3` target
+(`rustup target add wasm32-wasip3`),
 [`wasm-tools`](https://github.com/bytecodealliance/wasm-tools), and the
 submodules (`git submodule update --init --recursive`).
 
@@ -146,15 +147,15 @@ make run-complex     # two subscribers print "hello one" ... "hello ten"
 
 - runtime: `cd runtime && cargo build`; run a component with
   `runtime/target/debug/runtime <component.wasm>`
-- minimal example: `cd examples && cargo build --target wasm32-wasip2 -p main -p implementation`,
+- minimal example: `cd examples && cargo build --target wasm32-wasip3 -p main -p implementation`,
   then compose `main.wasm` with `implementation.wasm` (see `Makefile`)
-- pub-sub: `pub-sub/build-wasm.sh` builds and composes `pub-sub/target/wasm32-wasip2/debug/combined.wasm`
+- pub-sub: `pub-sub/build-wasm.sh` builds and composes `pub-sub/target/wasm32-wasip3/debug/combined.wasm`
 - complex example: `examples/complex/build-wasm.sh` (also builds the pub-sub component)
 
-Components that wait on streams can't block inside the synchronous
-`wasi:cli/run` 0.2 that Rust's `main` becomes. The pub-sub subscriber and the
-complex starter therefore export the asynchronous WASI 0.3 `wasi:cli/run`
-instead (`no_main` plus `generate!`), and the runtime prefers that export.
+On `wasm32-wasip3`, Rust's `main` is exported as the asynchronous WASI 0.3
+`wasi:cli/run`, so components can wait on streams from `main` with
+`wit_bindgen::block_on`. The runtime (wasmtime 46) runs that export, and
+falls back to the synchronous 0.2 one for older components.
 
 ## Native build option (symmetric ABI)
 
