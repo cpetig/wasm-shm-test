@@ -613,8 +613,10 @@ mod myshm {
         Ok((res,))
     }
 
+    // an address is just an offset into the guest's own linear memory and owns nothing,
+    // so dropping its handle has nothing to release
     fn ignore<T: WasiView>(_ctx: StoreContextMut<'_, T>, _obj: u32) -> wasmtime::Result<()> {
-        todo!()
+        Ok(())
     }
 
     pub(crate) fn add_to_linker<T: WasiView + IoView + GetBuffers + 'static>(
