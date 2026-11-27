@@ -64,17 +64,34 @@ The interface in short (`test:shm/exchange`, see the comments in
 | `minimum-size()` | how much storage attaching this block needs (adds page alignment padding) |
 | `optimum-size(count, size)` | storage for `count` simultaneous attachments, independent of a block |
 | `add-storage(area)` | donate a region of the caller's linear memory for future attachments |
-| `attach(options)` | map the block into that region: `write` is exclusive, otherwise shared read |
+| `attach(options)` | map the block into that region: `write` is exclusive, otherwise shared read (`busy` on conflict) |
 | `detach(consumed)` | unmap; the byte count transfers ownership of the contents (see DESIGN.md) |
-| `clone()` | another handle to the same block, for broadcasting read-only data |
-| `create-partition(...)` | hand out sub-regions, so a guest component can act as an allocator (not implemented yet) |
+| `clone()` | another handle to the same block with the same rights, e.g. to broadcast data |
+| `create-partition(start, size, mode)` | hand out a sub-range as a block of its own, read-write or read-only (see below) |
 | `create-local(area)` | wrap local memory as a block (native build only, likely superseded by `create-partition`) |
 
+Every handle carries rights. The constructor gives read-write, `clone` keeps
+the rights, and attaching a read-only handle with `write` fails with
+`read-only`.
+
+**Partitions** let a management component own a large block and hand out
+pieces of it, like an allocator. `create-partition` returns a new block for
+`[start, start + size)`:
+
+- a read-write handle can create read-write or read-only partitions, a
+  read-only handle only read-only ones
+- live partitions of the same block must not overlap (`overlap`); a range is
+  free again once the last handle of its partition is dropped. To share a range,
+  hand out clones of its partition
+- a partition is a block of its own (size, attach exclusion, valid bytes),
+  keeps the parent's storage alive, and can be partitioned again
+- for now the parent itself keeps unrestricted access to the whole block
+
 On Linux, the bundled runtime backs every block with an unlinked temporary
-file. `attach` calls `mmap(MAP_FIXED | MAP_SHARED)` on that file, at the
-first page boundary inside the donated region, which is why storage needs up
-to two extra pages. Two components attached to the same block share the same
-physical pages.
+file. `attach` calls `mmap(MAP_FIXED | MAP_SHARED)` on that file into a free,
+page-aligned piece of the donated storage, which is why storage needs up to
+two extra pages per attachment (`minimum-size`, `optimum-size`). Two
+components attached to the same block share the same physical pages.
 
 ## What's in this repository
 
@@ -85,6 +102,7 @@ The examples build on each other:
 | 1 | [`examples/minimal`](examples/minimal) | the bare primitives: one block, two components, the sequence above |
 | 2 | [`pub-sub`](pub-sub) | a publisher/subscriber component built *on top of* the primitives: blocks travel over `stream<memory-block>` to several subscribers (zero copy fan-out) |
 | 3 | [`examples/complex`](examples/complex) | structured data: a `list<string>` built mostly in place with [flat data types](https://github.com/cpetig/flat-types-rust), read by two subscribers without any copy after construction |
+| 4 | [`examples/partition`](examples/partition/src/main.rs) | the partition and rights rules, one checked step at a time (overlap, read-only, `busy`, nesting, lifetime) |
 
 Example 2 makes the point that the host only provides the mechanism. The
 policy (pooling buffers, fanning out to subscribers) lives in an ordinary,
@@ -141,6 +159,7 @@ submodules (`git submodule update --init --recursive`).
 make run-minimal     # prints "... = 3"
 make run-pub-sub     # two subscribers receive values, one per second
 make run-complex     # two subscribers print "hello one" ... "hello ten"
+make run-partition   # prints one "ok:" line per checked rule
 ```
 
 `make` builds everything. Each step on its own:
@@ -151,6 +170,8 @@ make run-complex     # two subscribers print "hello one" ... "hello ten"
   then compose `main.wasm` with `implementation.wasm` (see `Makefile`)
 - pub-sub: `pub-sub/build-wasm.sh` builds and composes `pub-sub/target/wasm32-wasip3/debug/combined.wasm`
 - complex example: `examples/complex/build-wasm.sh` (also builds the pub-sub component)
+- partition example: `cd examples && cargo build --target wasm32-wasip3 -p partition`,
+  then run `examples/target/wasm32-wasip3/debug/partition.wasm` directly
 
 On `wasm32-wasip3`, Rust's `main` is exported as the asynchronous WASI 0.3
 `wasi:cli/run`, so components can wait on streams from `main` with
@@ -182,17 +203,21 @@ for the shared libraries, while running a binary directly needs
 
 This is a proof of concept. **Don't use the runtime in production.**
 
-- The wasm runtime doesn't enforce the rules. Exclusive write attachment is
-  unchecked, `attach` always reports the full block size, and the
-  `consumed` count of `detach` is ignored. It also relies on wasmtime internals
-  to find a guest's linear memory. The in-process implementation of the
-  native build does track these (`busy`, valid and consumed bytes), so it is
-  the better reference for the intended semantics.
+- Both implementations enforce rights, write-exclusive/read-shared attachment
+  (`busy`) and the partition rules. Only the in-process implementation of the
+  native build tracks valid and consumed bytes: on wasm, `attach` always
+  reports the full block size and the `consumed` count of `detach` is
+  ignored. The runtime also relies on wasmtime internals to find a guest's
+  linear memory.
+- A parent block can still be attached as a whole while its partitions are
+  handed out, so attach exclusion doesn't yet apply between a parent and its
+  partitions (TODO: lock handed-out ranges in the parent).
+- On wasm, a partition that doesn't start or end on a page boundary also
+  makes the neighboring bytes in those pages visible to whoever attaches it.
 - Mapping replaces the pages of the donated region. Whatever the guest stored
   there before is hidden while a block is attached, which is why storage must
   be dedicated to attachments.
-- `create-partition` isn't implemented anywhere yet, and `create-local` only
-  in the native build.
+- `create-local` is only implemented in the native build.
 - `publish` doesn't wait for slow subscribers: a write that can't complete
   immediately is dropped. Blocking attachments are a planned extension.
 - The checked-in bindings under `pub-sub/rust-client/src` and

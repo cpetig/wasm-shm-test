@@ -88,8 +88,56 @@ noticing.
 
 The in-process implementation of the native build (`pub-sub/src/lib.rs`)
 follows steps 1 to 3; a write attachment there starts from an empty block
-instead of reporting the unconsumed rest. The wasm runtime doesn't check the
-protocol yet.
+instead of reporting the unconsumed rest. The wasm runtime enforces the
+exclusion of step 1 (`busy`) but not the byte counts yet.
+
+## Rights and partitions
+
+Every handle carries rights, read-write or read-only. The constructor gives
+read-write, and `clone` keeps the rights of the handle it is called on. A
+read-only handle can't attach for writing (`read-only`).
+
+Partitions let a component that owns a large block act as its allocator, so
+the host only provides the mechanism and the policy stays in a guest (compare
+the DMA and device driver idea above). `create-partition(start, size, mode)`
+returns a block for `[start, start + size)`:
+
+```
+block (rw) [0 ........................................ 16384)
+  p1 = part(0, 4096, write)      rw   ok
+  p2 = part(4096, 4096, read)    ro   ok
+  part(2048, 4096, read)              overlap: p1 and p2 are live
+  p2.part(0, 100, write)              read-only: p2 can only hand out ro
+  p2.part(0, 100, read)          ro   ok, nested partition
+  drop(p1)                            [0, 4096) is free again
+```
+
+- **Rights only narrow.** A read-write handle can create read-write or
+  read-only partitions; a read-only handle only read-only ones.
+- **Live siblings don't overlap.** Partitions created from one block, through
+  any of its clones, are siblings, and their ranges must be disjoint while they
+  are live. A partition is live until its last handle, clones included, is
+  dropped. Several readers of one range share it through clones of its
+  partition, not through overlapping partitions. Within one partition (and its
+  clones) the usual rule applies: write is exclusive, reads are shared.
+- **A partition is a block of its own**, with its own size, attach exclusion
+  and valid/consumed bytes. Its data is the parent's storage: a write through
+  the partition is visible through the parent at offset `start`. It keeps the
+  parent's storage alive, even after the parent handle is dropped.
+- **Open: the parent's access.** For now, the parent and its clones can still
+  attach the whole block independently of its partitions. The intended rule
+  is that handing out a partition locks its range in the parent, so that
+  write-exclusive/read-shared also holds between a parent and its partitions.
+- **Alignment.** Natively a partition's address is the parent's address plus
+  `start`. On an `mmap` host only whole pages can be mapped, so the runtime
+  maps from the page boundary at or below `start` and returns the interior
+  address. A partition that doesn't start or end on a page boundary therefore
+  exposes its neighbors' bytes in those pages. A host that must isolate
+  partitions strictly would have to require page-aligned partitions, or copy
+  for the unaligned parts.
+
+[`examples/partition`](examples/partition/src/main.rs) checks each of these
+rules, on wasm and natively.
 
 ## Relation to lazy lowering and caller-provided buffers
 
@@ -139,12 +187,16 @@ per hop dominates the cost.
 ## Implementation notes
 
 - **Runtime (wasmtime, Linux).** Each block is an unlinked temporary file of
-  the block's size. `add-storage` only records the donated region, per linear
-  memory. `attach` maps the file with `mmap(MAP_FIXED | MAP_SHARED)` at the
-  first page boundary inside that region, so a region needs the block size
-  plus up to two pages (`minimum-size`). `detach` unmaps it. The runtime finds
-  the guest's memory base by wrapping the lifted resource and area types,
-  which uses wasmtime internals.
+  the block's size; partitions map the same file at an offset. `add-storage`
+  only records the donated regions, per linear memory. They form a pool:
+  every attachment takes a free, page-aligned piece of it, so one region of
+  `optimum-size(count, size)` bytes serves `count` simultaneous attachments,
+  and `attach` returns `no-storage` when nothing fits. `attach` maps the file
+  into that piece with `mmap(MAP_FIXED | MAP_SHARED)` (read-only handles map
+  `PROT_READ`). `detach` puts a zero-filled anonymous mapping back instead of
+  leaving a hole in linear memory, and returns the piece to the pool. The
+  runtime finds the guest's memory base by wrapping the lifted resource and
+  area types, which uses wasmtime internals.
 - **Without an MMU.** `minimum-size` and `optimum-size` may return 0. The
   guest then skips `add-storage`, and `attach` returns addresses the guest
   can already reach, e.g. a region the MPU opens for the duration of the
@@ -222,6 +274,9 @@ What this means for memory blocks:
 
 - **Drop while attached.** Should dropping the last handle of an attached
   block trap, defer until detach, or unmap immediately?
+- **Locking partitioned ranges in the parent.** See
+  [Rights and partitions](#rights-and-partitions). This needs the attach
+  exclusion to work on byte ranges, not whole blocks.
 - **Enforcement cost.** Exclusive write attachment is cheap to check in the
   host. Revoking a mapping when a block is handed on (instead of trusting the
   guest to detach first) costs an MMU operation per hop.
